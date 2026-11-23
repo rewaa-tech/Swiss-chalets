@@ -5,7 +5,7 @@ const config: NextConfig = {
   poweredByHeader: false,
   compress: true,
   serverExternalPackages: ["sharp", "pg", "pdf-lib"],
-  experimental: { serverActions: { bodySizeLimit: "6mb" } },
+  experimental: { serverActions: { bodySizeLimit: "26mb" }, authInterrupts: true },
   images: { unoptimized: true },
   async headers() {
     return [

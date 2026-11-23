@@ -1,7 +1,8 @@
 import "server-only";
+import { cache } from "react";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirect, notFound as nextNotFound, forbidden as nextForbidden } from "next/navigation";
 import { one, q } from "./db";
 import { randomHex, sha256 } from "./crypto";
 import { effectivePermissions, type Permission, type SessionUser, type Role } from "./permissions";
@@ -50,19 +51,22 @@ export async function userFromToken(token: string | undefined): Promise<SessionU
   };
 }
 
-export async function currentUser(): Promise<SessionUser | null> {
-  return userFromToken((await cookies()).get(SESSION_COOKIE)?.value);
-}
+export const currentUser = cache(async (): Promise<SessionUser | null> => userFromToken((await cookies()).get(SESSION_COOKIE)?.value));
 
 /** For pages: redirects to login when signed out. */
 export async function requireUser(area: "branch" | "admin", perm?: Permission): Promise<SessionUser> {
   const u = await currentUser();
   if (!u) redirect(`/login?next=/${area}`);
   if (u.mustChangePassword) redirect("/account/password");
-  if (area === "admin" && u.role !== "SuperAdmin") throw notFound();
+  if (area === "admin" && u.role !== "SuperAdmin") nextNotFound();
   if (area === "branch" && u.role === "SuperAdmin") redirect("/admin");
-  if (perm && !u.permissions.has(perm)) throw forbidden();
+  if (perm && !u.permissions.has(perm)) nextForbidden();
   return u;
+}
+
+/** Page-level permission gate → real 403. */
+export function requirePerm(u: SessionUser, perm: Permission) {
+  if (!u.permissions.has(perm)) nextForbidden();
 }
 
 /** For server actions / API: throws instead of redirecting. */
