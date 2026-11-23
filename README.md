@@ -1,18 +1,21 @@
 # الأكواخ السويسرية — Swiss Chalets
 
-موقع لحجز الأكواخ والمزارع السياحية في سوريا (فرع إدلب، فرع حمص، وفرع دمشق قريبًا). الزبون بيحجز من الموقع وبيدفع كامل المبلغ عبر شام كاش، وبعدها مدير الفرع بيثبّت الحجز يدويًا.
+موقع لحجز الأكواخ والمزارع السياحية بمسابح خاصة في سوريا. الفروع: إدلب، وحمص، ودمشق قريبًا.
 
-## الوثائق
+الزبون بيحجز من الموقع، وبيدفع كامل المبلغ عبر شام كاش، وبيرفع الإشعار (صورة أو PDF). بعدها مدير الفرع بيثبّت الحجز يدويًا.
+
+## الملفات
 
 | الملف | المحتوى |
 | --- | --- |
-| [docs/analysis-requirements.md](docs/analysis-requirements.md) | وثيقة التحليل والمتطلبات الكاملة: الأدوار، قواعد العمل، UML، ERD، الواجهات، الهوية البصرية |
-| [docs/build-prompt.md](docs/build-prompt.md) | البرومبت التنفيذي اللي بيبني فيه Claude الموقع |
+| [docs/build-prompt.md](docs/build-prompt.md) | **البرومبت التنفيذي (الإصدار 2):** المرجع الأساسي للبناء والترقية |
+| [docs/analysis-requirements.md](docs/analysis-requirements.md) | وثيقة التحليل: الأدوار، وقواعد العمل، وUML، وERD، والواجهات |
+| [design/](design/) | التصاميم المعتمدة وصور الأكواخ |
 
 ## التقنيات
 
-ASP.NET Core 10 (LTS) MVC · EF Core 10 · PostgreSQL 17 · Tailwind CSS · Alpine.js · Hostinger VPS (Ubuntu 24.04 + Nginx)
+ASP.NET Core 10 (LTS) MVC · EF Core 10 · PostgreSQL 17 · Tailwind CSS · Alpine.js · pdf.js · Playwright · Hostinger VPS (Ubuntu 24.04 + Nginx)
 
-## الحالة
+## الاستخدام
 
-المرحلة الحالية هي التحليل والتوثيق. كود الموقع لسا ما بلّش.
+افتح المستودع بـ Claude Code وأرسله محتوى `docs/build-prompt.md`. Claude رح يحدد لحاله إذا لازم يرقّي مشروع موجود أو يبني من الصفر (القسم 0 بالبرومبت).

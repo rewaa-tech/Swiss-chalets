@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ثيم الشتاء — الأكواخ السويسرية</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700&amp;family=IBM+Plex+Sans+Arabic:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0E1F17}
+a{color:#FFFFFF}a:hover{color:#F3D7A8}
+.ph-dusk{background-image:url(/_blob/5afee821725d3208e48d02065c236ac7);background-size:cover;background-position:center 40%}
+@keyframes slide{0%{transform:translateY(0)}100%{transform:translateY(46px)}}
+.trail{animation:slide 9s cubic-bezier(.4,0,.6,1) infinite alternate}
+@keyframes breathe{0%,100%{opacity:.55}50%{opacity:.8}}
+.fog{animation:breathe 7s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){.trail,.fog{animation:none}}
+</style>
+</helmet>
+<div dir="rtl" class="ph-dusk" style="width: 1440px; height: 820px; position: relative; overflow: hidden; font-family: 'IBM Plex Sans Arabic', sans-serif">
+<div style="position: absolute; inset: 0; background: radial-gradient(ellipse at 60% 55%, rgba(255,170,90,0.28) 0%, rgba(255,170,90,0) 55%)"></div>
+<div class="fog" style="position: absolute; inset: 0; backdrop-filter: blur(3px); background: radial-gradient(ellipse at 55% 50%, rgba(235,238,236,0) 30%, rgba(235,238,236,0.42) 75%, rgba(235,238,236,0.62) 100%)"></div>
+<div style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,22,16,0) 0%, rgba(10,22,16,0.35) 50%, rgba(10,22,16,0.82) 100%)"></div>
+
+<div aria-hidden="true" style="position: absolute; inset: 0">
+<sc-for list="{{ drops }}" as="d" hint-placeholder-count="80">
+<span style="position: absolute; left: {{ d.x }}px; top: {{ d.y }}px; width: {{ d.w }}px; height: {{ d.h }}px; border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%; background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.95) 0 14%, rgba(255,255,255,0.18) 30%, rgba(20,30,25,0.18) 72%, rgba(255,255,255,0.55) 100%); box-shadow: 0 1px 2px rgba(0,0,0,0.25); opacity: {{ d.o }}"></span>
+</sc-for>
+<sc-for list="{{ trails }}" as="t" hint-placeholder-count="5">
+<span class="trail" style="position: absolute; left: {{ t.x }}px; top: {{ t.y }}px; width: 3px; height: {{ t.h }}px; border-radius: 3px; background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.35) 70%, rgba(255,255,255,0.85) 100%)"></span>
+</sc-for>
+</div>
+
+<header style="position: absolute; top: 24px; right: 120px; left: 120px; height: 72px; box-sizing: border-box; padding: 0 14px 0 22px; border-radius: 20px; background: rgba(240,244,242,0.28); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.45); display: flex; align-items: center; justify-content: space-between; color: #FFFFFF">
+<span style="display: flex; align-items: center; gap: 10px"><svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 30 L20 6 L35 30"/><path d="M20 14 L14 25 H26Z" stroke="#F3D7A8"/><path d="M20 25 V29"/><path d="M6 35 Q10 32 14 35 T22 35 T30 35 T36 35"/></svg><span style="font-family: Alexandria, sans-serif; font-weight: 700; font-size: 18px">الأكواخ السويسرية</span></span>
+<span style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,0.18); font-size: 14px; font-weight: 600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 2v20M4.9 7l14.2 10M19.1 7L4.9 17"/></svg>ثيم الشتاء</span>
+</header>
+
+<div style="position: absolute; right: 120px; top: 230px; max-width: 560px; display: flex; flex-direction: column; gap: 20px; color: #FFFFFF">
+<span style="align-self: flex-start; padding: 8px 14px; border-radius: 999px; background: rgba(255,170,90,0.22); border: 1px solid rgba(255,200,150,0.55); backdrop-filter: blur(8px); font-size: 14px; font-weight: 600; color: #FFE6CC">شتاء دافئ · مسابح مدفأة</span>
+<h1 style="margin: 0; font-family: Alexandria, sans-serif; font-weight: 700; font-size: 66px; line-height: 1.18; text-shadow: 0 2px 30px rgba(0,0,0,0.35)">دفء الخشب،<br>ومياه مدفأة</h1>
+<p style="margin: 0; font-size: 19px; line-height: 1.85; color: #F1ECE4">زجاج عليه بخار وقطرات، وفي الداخل دفء. احجز ليلتك أو فترتك في وحدات المسابح المدفأة.</p>
+<a href="#" style="align-self: flex-start; height: 60px; padding: 0 28px; border-radius: 999px; background: linear-gradient(90deg, #C9622F 0%, #8A4A26 50%, #3B2A1C 100%); color: #FFFFFF; text-decoration: none; font-family: Alexandria, sans-serif; font-weight: 600; font-size: 17px; display: flex; align-items: center; gap: 12px; box-shadow: 0 16px 36px rgba(201,98,47,.45)">احجز إقامة دافئة</a>
+</div>
+
+<div style="position: absolute; left: 120px; bottom: 48px; padding: 16px 20px; border-radius: 20px; background: rgba(240,244,242,0.24); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.4); color: #FFFFFF; display: flex; flex-direction: column; gap: 6px; max-width: 330px">
+<span style="font-family: Alexandria, sans-serif; font-weight: 600; font-size: 15px">طبقة الثيم</span>
+<span style="font-size: 13px; line-height: 1.7; color: #F1ECE4">ضباب على الأطراف، قطرات ثابتة وأخرى تنزلق ببطء، وتوهج دافئ حول الكوخ. الألوان: نحاسي دافئ بدل الأخضر.</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":820}}'>
+class Component extends DCLogic {
+renderVals() {
+var seed = 7;
+function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+var drops = [];
+for (var i = 0; i < 90; i++) {
+var w = 4 + Math.round(rnd() * 14);
+var x = Math.round(rnd() * 1430);
+var y = Math.round(rnd() * 810);
+var inCenter = x > 420 && x < 1000 && y > 180 && y < 640;
+drops.push({ x: x, y: y, w: w, h: Math.round(w * (1 + rnd() * 0.3)), o: inCenter ? 0.35 : 0.9 });
+}
+var trails = [
+{ x: 210, y: 120, h: 150 }, { x: 380, y: 60, h: 210 }, { x: 1120, y: 90, h: 170 }, { x: 1290, y: 300, h: 230 }, { x: 140, y: 470, h: 180 }
+];
+return { drops: drops, trails: trails };
+}
+}
+</script>
+</body>
+</html>
