@@ -87,6 +87,20 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
                 {season ? <>الموسم الحالي: <strong>{SEASON_AR[season.kind]}</strong> · {mode?.mode === "Hotel" ? "حجز بالليلة (فندقي)" : mode?.mode === "Pool" ? `فترات مسبح${u.has_heated_pool && season.kind === "Winter" ? " · مسبح مدفأ" : ""}` : "غير متاح للحجز حاليًا"}</> : "لا يوجد موسم حجز حالي"}
               </span>
             </div>
+          </div>
+          <div className="lg:row-span-2 lg:col-start-2 lg:row-start-1 min-w-0">
+            <BookingWidget
+              unit={{ id: u.id, name: u.name, capacity: u.capacity, familyOnly: u.allowed_category === "FamilyOnly", branch: u.branch_name, reviewStart: u.review_start.slice(0, 5), reviewEnd: u.review_end.slice(0, 5) }}
+              currency={meta.currency}
+              today={todayLocal()}
+              maxDate={addDays(todayLocal(), 365)}
+              formStamp={formStamp()}
+              mechanism={mechanism}
+              documents={s.documents_text ?? ""}
+              todayLabel={fmtDayAr(todayLocal())}
+            />
+          </div>
+          <div className="flex flex-col gap-6 min-w-0 lg:col-start-1">
             {u.description && <p style={{ margin: 0, fontSize: 17, lineHeight: 1.9 }}>{u.description}</p>}
             {amenities.length > 0 && (
               <section className="flex flex-col gap-3">
@@ -106,16 +120,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
               </ul>
             </section>
           </div>
-          <BookingWidget
-            unit={{ id: u.id, name: u.name, capacity: u.capacity, familyOnly: u.allowed_category === "FamilyOnly", branch: u.branch_name, reviewStart: u.review_start.slice(0, 5), reviewEnd: u.review_end.slice(0, 5) }}
-            currency={meta.currency}
-            today={todayLocal()}
-            maxDate={addDays(todayLocal(), 365)}
-            formStamp={formStamp()}
-            mechanism={mechanism}
-            documents={s.documents_text ?? ""}
-            todayLabel={fmtDayAr(todayLocal())}
-          />
+
         </div>
       </div>
     </PublicShell>

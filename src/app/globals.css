@@ -321,3 +321,5 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .pulse { animation: pulse 2.2s var(--ease) infinite; }
 [data-fx~="copy"][data-copied] svg { display: none; }
 [data-fx~="copy"][data-copied]::before { content: "✓"; font-weight: 700; color: var(--success); }
+/* keep the WhatsApp button clear of the floating booking bar on phones/tablets */
+@media (max-width: 1023px) { body:has(#book) .wa-fab { bottom: 104px !important; } }

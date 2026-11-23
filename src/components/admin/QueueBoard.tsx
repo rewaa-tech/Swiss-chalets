@@ -114,7 +114,7 @@ export default function QueueBoard({ initial, canReview, canBlock, reviewAction,
               <div className="flex flex-col items-end gap-1"><Deadline due={current.review_due_at} now={now} big /><span style={{ fontSize: 11, color: "var(--sand)" }}>مهلة المراجعة</span></div>
             </div>
           </div>
-          <div className="admin-card flex flex-col gap-4 lg:mt-0" style={{ marginTop: -48 }}>
+          <div className="admin-card flex flex-col gap-4 -mt-12 lg:mt-0">
             <div className="hidden lg:flex items-center justify-between">
               <div className="flex flex-col"><h2 style={{ fontSize: 20 }}>{current.customer_name}</h2><span className="muted num" dir="ltr" style={{ textAlign: "right" }}>{current.phone_e164}</span></div>
               <div className="flex items-center gap-3"><Deadline due={current.review_due_at} now={now} big /><span className="num" style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 26 }}>{money(current.total, current.currency)}</span></div>

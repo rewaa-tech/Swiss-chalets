@@ -1,0 +1,25 @@
+[Unit]
+Description=Swiss Chalets (Next.js)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=swisschalets
+Group=swisschalets
+WorkingDirectory=/opt/swisschalets/app/.next/standalone
+EnvironmentFile=/etc/swisschalets.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+StandardOutput=append:/var/swisschalets/logs/app.log
+StandardError=append:/var/swisschalets/logs/app.log
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+ReadWritePaths=/var/swisschalets
+
+[Install]
+WantedBy=multi-user.target

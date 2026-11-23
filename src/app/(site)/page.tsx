@@ -9,6 +9,8 @@ import { THEME_BADGE } from "@/lib/services/theme";
 
 export const dynamic = "force-dynamic";
 
+const unitsAr = (n: number) => (n === 1 ? "وحدة واحدة" : n === 2 ? "وحدتان" : n <= 10 ? `${n} وحدات` : `${n} وحدة`);
+
 export default async function Home() {
   const [theme, branches, units, meta] = await Promise.all([generalTheme(), publicBranches(), featuredUnits(3), siteMeta()]);
   const badge = THEME_BADGE[theme] ?? "مسابح خاصة · صيفًا وشتاءً";
@@ -23,7 +25,7 @@ export default async function Home() {
         <div className="hero-shade" />
         <div className="hero-fade" />
         <div className="wrap flex-1 flex items-center" style={{ padding: "150px 0 130px" }}>
-          <div className="flex flex-col gap-[22px]" style={{ maxWidth: 560 }} data-fx="reveal">
+          <div className="flex flex-col gap-[22px]" style={{ maxWidth: 720 }} data-fx="reveal">
             <span className="chip chip-glass self-start" style={{ fontSize: 14 }}>
               <span style={{ width: 8, height: 8, borderRadius: 99, background: theme === "winter" ? "#F3A46B" : "#7FD4CF" }} />{badge}
             </span>
@@ -77,7 +79,7 @@ export default async function Home() {
                 <span className="absolute flex items-end justify-between gap-3 text-white" style={{ right: 28, left: 28, bottom: 26, zIndex: 3 }}>
                   <span className="flex flex-col gap-1.5">
                     <span style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 38 }}>{b.name}</span>
-                    <span style={{ fontSize: 15, color: "#E4DDD1" }}>{b.units ? `${b.units} وحدات · أكواخ ومزارع` : "الوحدات تُضاف قريبًا"}</span>
+                    <span style={{ fontSize: 15, color: "#E4DDD1" }}>{b.units ? `${unitsAr(b.units)} · أكواخ ومزارع` : "الوحدات تُضاف قريبًا"}</span>
                   </span>
                   <span className="flex items-center gap-2" style={{ height: 52, padding: "0 22px", borderRadius: 999, background: "rgba(255,255,255,.92)", color: "var(--forest)", fontWeight: 600, fontSize: 15, whiteSpace: "nowrap" }}>عرض الوحدات<Icon name="arrow" size={16} width={2} /></span>
                 </span>
