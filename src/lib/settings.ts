@@ -1,17 +1,18 @@
 import { q, type Db } from "./db";
 
 export type Settings = Record<string, string>;
-let cache: { at: number; v: Settings } | null = null;
+const g = globalThis as unknown as { __scSettings?: { at: number; v: Settings } | null };
 
 export async function getSettings(db?: Db): Promise<Settings> {
+  const cache = g.__scSettings;
   if (!db && cache && Date.now() - cache.at < 15000) return cache.v;
   const rows = await q<{ key: string; value: string }>("SELECT key, value FROM settings", [], db);
   const v = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  if (!db) cache = { at: Date.now(), v };
+  if (!db) g.__scSettings = { at: Date.now(), v };
   return v;
 }
 
-export function invalidateSettings() { cache = null; }
+export function invalidateSettings() { g.__scSettings = null; }
 
 export async function setSetting(key: string, value: string, db?: Db) {
   await q("INSERT INTO settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [key, value], db);

@@ -1,4 +1,7 @@
-const store = new Map<string, { at: number; v: unknown }>();
+// Shared via globalThis: Next bundles route handlers and server actions separately,
+// so module-level state would not be shared between them.
+const g = globalThis as unknown as { __scCache?: Map<string, { at: number; v: unknown }> };
+const store = (g.__scCache ??= new Map<string, { at: number; v: unknown }>());
 const TTL = 30_000;
 
 export function cacheGet<T>(k: string): T | undefined {

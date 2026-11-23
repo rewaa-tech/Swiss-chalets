@@ -8,7 +8,7 @@ import type { ActionState } from "@/lib/actions";
 
 export async function login(_: ActionState | null, fd: FormData): Promise<ActionState> {
   const ip = await clientIp();
-  if (!allow(`login-action:${ip}`, 5)) return { ok: false, message: "محاولات كثيرة. انتظر دقيقة وحاول مجددًا", at: Date.now() };
+  if (!allow(`login-action:${ip}`, Number(process.env.LOGIN_RATE_LIMIT ?? 5))) return { ok: false, message: "محاولات كثيرة. انتظر دقيقة وحاول مجددًا", at: Date.now() };
   const username = String(fd.get("username") ?? "").trim();
   const password = String(fd.get("password") ?? "");
   const u = await one("SELECT id, password_hash, security_stamp, role, is_active, must_change_password FROM app_users WHERE lower(username) = lower($1)", [username]);

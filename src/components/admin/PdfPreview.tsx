@@ -1,24 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Sheet from "../Sheet";
-
-type PdfJs = { GlobalWorkerOptions: { workerSrc: string }; getDocument: (o: object) => { promise: Promise<PdfDoc> } };
-type PdfDoc = { numPages: number; getPage: (n: number) => Promise<{ getViewport: (o: { scale: number }) => { width: number; height: number }; render: (o: object) => { promise: Promise<void> } }>; destroy: () => void };
-
-let lib: Promise<PdfJs> | null = null;
-function loadPdfJs(): Promise<PdfJs> {
-  // Local copy of pdf.js (Apache-2.0) served from /lib/pdfjs — no CDN.
-  lib ??= import(/* webpackIgnore: true */ /* turbopackIgnore: true */ "/lib/pdfjs/pdf.min.mjs" as string).then((m: PdfJs) => {
-    m.GlobalWorkerOptions.workerSrc = "/lib/pdfjs/pdf.worker.min.mjs";
-    return m;
-  });
-  return lib;
-}
+import { openPdf, type PdfDoc } from "../pdfjs";
 
 async function openDoc(url: string) {
-  const pdfjs = await loadPdfJs();
   const data = await (await fetch(url, { credentials: "same-origin" })).arrayBuffer();
-  return pdfjs.getDocument({ data, isEvalSupported: false, enableScripting: false, disableAutoFetch: true }).promise;
+  return openPdf(data);
 }
 
 async function renderPage(doc: PdfDoc, n: number, canvas: HTMLCanvasElement, width: number) {

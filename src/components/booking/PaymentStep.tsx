@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "../Icon";
 import HeroImage from "../HeroImage";
+import { countPdfPages } from "../pdfjs";
 
 interface Props {
   token: string; expired: boolean; holdExpiresAt: string; createdAt: string; image: string; wa: string | null;
@@ -45,8 +46,7 @@ export default function PaymentStep(p: Props) {
     if (preview) URL.revokeObjectURL(preview);
     if (f.type === "application/pdf") {
       setPreview(null);
-      const txt = new TextDecoder("latin1").decode(await f.arrayBuffer());
-      setPages((txt.match(/\/Type\s*\/Page(?!s)/g) ?? []).length || null);
+      setPages(await countPdfPages(f));
     } else setPreview(URL.createObjectURL(f));
   };
 

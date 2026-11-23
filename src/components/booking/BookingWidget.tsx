@@ -85,7 +85,7 @@ export default function BookingWidget({ unit, currency, today, maxDate, formStam
         ) : (
           <div className="cal-grid" data-fx="calendar-hover" role="group" aria-label={`أيام ${monthLabel(month)}`}>
             {grid.map((d, i) => d ? (
-              <button key={d.date} type="button" className="cal-day num" data-state={d.state} disabled={d.state === "unavailable"} aria-pressed={day === d.date}
+              <button key={d.date} type="button" className="cal-day num" data-date={d.date} data-state={d.state} disabled={d.state === "unavailable"} aria-pressed={day === d.date}
                 aria-label={`${dayLabel(d.date)}${d.state === "unavailable" ? " — غير متاح" : ` — ${d.freeSlots} فترات متاحة`}`}
                 onClick={() => pickDay(d.date)} onPointerEnter={(e) => e.pointerType === "mouse" && setHover(d.date)} onPointerLeave={() => setHover(null)}>
                 {Number(d.date.slice(8))}

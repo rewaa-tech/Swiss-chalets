@@ -7,6 +7,9 @@ const config: NextConfig = {
   serverExternalPackages: ["sharp", "pg", "pdf-lib"],
   experimental: { serverActions: { bodySizeLimit: "26mb" }, authInterrupts: true },
   images: { unoptimized: true },
+  async redirects() {
+    return [{ source: "/favicon.ico", destination: "/favicon.svg", permanent: true }];
+  },
   async headers() {
     return [
       {

@@ -1,4 +1,5 @@
-const buckets = new Map<string, number[]>();
+const g = globalThis as unknown as { __scRate?: Map<string, number[]> };
+const buckets = (g.__scRate ??= new Map<string, number[]>());
 
 /** Sliding-window limiter (single-process VPS). Returns true when allowed. */
 export function allow(key: string, limit: number, windowMs = 60_000): boolean {

@@ -64,6 +64,6 @@ export function monthDays(month: string): string[] {
 const arDate = new Intl.DateTimeFormat("ar-SY-u-nu-latn", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" });
 const arDateTime = new Intl.DateTimeFormat("ar-SY-u-nu-latn", { timeZone: TZ, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
-export function fmtDayAr(date: string): string { return arDate.format(localToUtc(date, 12 * 60)); }
+export function fmtDayAr(date: string | null | undefined): string { return date ? arDate.format(localToUtc(date, 12 * 60)) : "—"; }
 export function fmtDateTimeAr(d: Date | string | null | undefined): string { return d ? arDateTime.format(new Date(d)) : "—"; }
-export function fmtTime(d: Date | string): string { return minutesToTime(toLocal(new Date(d)).minutes); }
+export function fmtTime(d: Date | string | null | undefined): string { return d ? minutesToTime(toLocal(new Date(d)).minutes) : "—"; }

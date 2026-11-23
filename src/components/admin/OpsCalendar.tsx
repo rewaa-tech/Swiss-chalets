@@ -53,8 +53,8 @@ export default function OpsCalendar({ units, days, cells, action, month, prev, n
       <p className="muted" style={{ margin: 0, fontSize: 13 }}>اسحب على الخلايا لتحديد عدة أيام ووحدات، ثم اختر فتح أو إغلاق.</p>
       <div style={{ overflowX: "auto", userSelect: "none", touchAction: "pan-x pan-y" }} className="admin-card">
         <table style={{ borderCollapse: "separate", borderSpacing: 3, fontSize: 12 }}>
-          <thead><tr><th style={{ position: "sticky", right: 0, background: "#fff", zIndex: 1, textAlign: "start", padding: "0 8px", minWidth: 120 }}>الوحدة</th>
-            {days.map((d) => <th key={d} className="num" style={{ minWidth: 30, color: d === today ? "var(--ember)" : "var(--stone)", fontWeight: 600 }}>{Number(d.slice(8))}</th>)}</tr></thead>
+          <thead><tr><th style={{ position: "sticky", right: 0, background: "#fff", zIndex: 1, textAlign: "start", padding: "0 8px", minWidth: 100 }}>الوحدة</th>
+            {days.map((d) => <th key={d} className="num" style={{ minWidth: 26, color: d === today ? "var(--ember)" : "var(--stone)", fontWeight: 600 }}>{Number(d.slice(8))}</th>)}</tr></thead>
           <tbody>
             {units.map((u, ui) => (
               <tr key={u.id}>
@@ -66,11 +66,11 @@ export default function OpsCalendar({ units, days, cells, action, month, prev, n
                   const confirmed = c?.bookings.some((b) => b.status === "Confirmed" || b.status === "Completed");
                   const bg = sel.has(k) || inRect(ui, di) ? "var(--forest-deep)" : confirmed ? "#DDEFE3" : c?.bookings.length ? "var(--cal-partial)" : c?.open ? "#fff" : "var(--cal-off)";
                   return (
-                    <td key={d}
+                    <td key={d} data-cell={k}
                       onPointerDown={(e) => { if (past) return; e.preventDefault(); drag.current = { u: ui, d: di }; setAnchor({ u: ui, d: di }); setCur({ u: ui, d: di }); }}
                       onPointerEnter={() => drag.current && setCur({ u: ui, d: di })}
                       title={c?.bookings.map((b) => `#${b.id} ${b.name}`).join("، ") || (c?.open ? "مفتوح" : "مغلق")}
-                      style={{ width: 30, height: 34, borderRadius: 8, background: bg, border: c?.open || sel.has(k) ? "1px solid var(--line)" : "1px solid transparent", opacity: past ? 0.45 : 1, cursor: past ? "default" : "pointer", textAlign: "center", color: sel.has(k) ? "#fff" : "var(--stone)" }}>
+                      style={{ width: 26, height: 34, borderRadius: 7, background: bg, border: c?.open || sel.has(k) ? "1px solid var(--line)" : "1px solid transparent", opacity: past ? 0.45 : 1, cursor: past ? "default" : "pointer", textAlign: "center", color: sel.has(k) ? "#fff" : "var(--stone)" }}>
                       {c?.bookings.length ? "●" : ""}
                     </td>
                   );

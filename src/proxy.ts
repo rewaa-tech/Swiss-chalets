@@ -15,10 +15,10 @@ export function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
   // Rate limiting: 20/min per IP on /api/*, 5 login attempts/min.
-  if (path.startsWith("/api/") && !allow(`api:${ip(req)}`, 20)) {
+  if (path.startsWith("/api/") && !allow(`api:${ip(req)}`, Number(process.env.API_RATE_LIMIT ?? 20))) {
     return NextResponse.json({ title: "طلبات كثيرة، انتظر دقيقة وحاول مجددًا", status: 429 }, { status: 429, headers: { "Content-Type": "application/problem+json", "Retry-After": "60" } });
   }
-  if (path === "/login" && req.method === "POST" && !allow(`login:${ip(req)}`, 5)) {
+  if (path === "/login" && req.method === "POST" && !allow(`login:${ip(req)}`, Number(process.env.LOGIN_RATE_LIMIT ?? 5))) {
     return new NextResponse("محاولات دخول كثيرة، انتظر دقيقة", { status: 429, headers: { "Retry-After": "60" } });
   }
 

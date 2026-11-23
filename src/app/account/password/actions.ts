@@ -22,5 +22,6 @@ export async function changePassword(_: ActionState | null, fd: FormData): Promi
   await q("UPDATE app_users SET security_stamp = $2 WHERE id = $1", [u.id, stamp]);
   await createSession(u.id, stamp);
   await audit({ userId: u.id, branchId: u.branchId, action: "ChangePassword", entity: "user", entityId: u.id });
-  redirect(u.role === "SuperAdmin" ? "/admin?ok=تم تغيير كلمة المرور" : "/branch?ok=تم تغيير كلمة المرور");
+  const ok = encodeURIComponent("تم تغيير كلمة المرور");
+  redirect(u.role === "SuperAdmin" ? `/admin?ok=${ok}` : `/branch?ok=${ok}`);
 }

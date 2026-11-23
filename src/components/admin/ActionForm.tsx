@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useActionState, useContext, useEffect, useRef } from "react";
+import { createContext, useActionState, useCallback, useContext, useEffect, useRef } from "react";
 import { toast } from "@/fx/toast";
 
 export interface ActionState { ok: boolean; message: string; field?: string; data?: unknown; affected?: { id: number; customer_name: string; status: string; day: string }[]; at: number }
@@ -11,13 +11,18 @@ export const useFormState = () => useContext(Ctx);
 export default function ActionForm({ action, children, className, reset = false, onDone, id, style }: {
   action: Action; children: React.ReactNode; className?: string; reset?: boolean; onDone?: (s: ActionState) => void; id?: string; style?: React.CSSProperties;
 }) {
-  const [state, formAction, pending] = useActionState(action, null);
+  // Toast as soon as the result arrives — even if the form unmounts on refresh (e.g. a removed row).
+  const withToast = useCallback(async (prev: ActionState | null, fd: FormData) => {
+    const s = await action(prev, fd);
+    if (s) toast(s.message, s.ok ? "ok" : "err");
+    return s;
+  }, [action]);
+  const [state, formAction, pending] = useActionState(withToast, null);
   const ref = useRef<HTMLFormElement>(null);
   const last = useRef(0);
   useEffect(() => {
     if (!state || state.at === last.current) return;
     last.current = state.at;
-    toast(state.message, state.ok ? "ok" : "err");
     if (state.ok && reset) ref.current?.reset();
     onDone?.(state);
   }, [state, reset, onDone]);
