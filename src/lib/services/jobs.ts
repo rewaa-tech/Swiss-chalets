@@ -65,3 +65,11 @@ export function startJobs() {
   setTimeout(tick, 5000);
   setInterval(tick, 60_000).unref?.();
 }
+
+/** BR-24: inside the review window the first alert goes out immediately. */
+export async function alertIfWithinWindow(bookingId: number) {
+  try {
+    const r = await q("UPDATE bookings SET first_alert_at = now(), last_reminder_at = now() WHERE id = $1 AND first_alert_at IS NULL AND status = 'PendingReview' RETURNING id", [bookingId]);
+    if (r.length) await notifyBooking(bookingId, "new");
+  } catch (e) { console.error("[alert]", e); }
+}
