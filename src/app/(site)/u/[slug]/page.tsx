@@ -7,6 +7,7 @@ import SeasonFx from "@/components/SeasonFx";
 import Icon from "@/components/Icon";
 import BookingWidget from "@/components/booking/BookingWidget";
 import ShareButton from "@/components/ShareButton";
+import Gallery, { type GalleryItem } from "@/components/Gallery";
 import { q, one } from "@/lib/db";
 import { branchTheme, siteMeta } from "@/lib/services/public";
 import { getSettings, fillTemplate } from "@/lib/settings";
@@ -43,12 +44,14 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
   if (!u) notFound();
   const [{ theme, season }, meta, media, amenities, s] = await Promise.all([
     branchTheme(u.branch_id), siteMeta(),
-    q("SELECT path_base, width, height FROM unit_media WHERE unit_id = $1 ORDER BY is_cover DESC, sort_order, id", [u.id]),
+    q(`SELECT id, kind, path_base AS base, width AS w, height AS h, caption, color, video_path AS video, video_hd AS hd, duration_seconds AS duration
+         FROM unit_media WHERE unit_id = $1 AND is_active AND status = 'Ready' AND path_base <> '' ORDER BY sort_order, id`, [u.id]),
     q("SELECT a.name, a.icon FROM unit_amenities ua JOIN amenities a ON a.id = ua.amenity_id WHERE ua.unit_id = $1 ORDER BY a.id", [u.id]),
     getSettings(),
   ]);
   const mode = season ? await one("SELECT mode FROM unit_season_modes WHERE unit_id = $1 AND season_id = $2", [u.id, season.id]) : null;
-  const cover = media[0]?.path_base ? `/media/${media[0].path_base}` : meta.hero;
+  const coverBase = u.cover_path_base ?? media.find((m) => m.kind === "Image")?.base ?? null;
+  const cover = coverBase ? `/media/${coverBase}` : meta.hero;
   const mechanism = fillTemplate(s.booking_mechanism_text ?? "", { "الفرع": u.branch_name, "البداية": u.review_start.slice(0, 5), "النهاية": u.review_end.slice(0, 5) });
 
   return (
@@ -59,7 +62,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
         </div>
       )}
       <section className="hero" style={{ minHeight: 460 }}>
-        <HeroImage base={cover} alt={u.name} priority />
+        <HeroImage base={cover} alt={u.name} priority style={coverBase ? { objectPosition: `${u.cover_focal_x}% ${u.cover_focal_y}%`, backgroundColor: u.cover_color ?? undefined } : undefined} />
         <SeasonFx theme={theme} />
         <div className="absolute inset-0" style={{ zIndex: -1, background: "linear-gradient(180deg, rgba(10,22,16,.45) 0%, rgba(10,22,16,0) 30%, rgba(10,22,16,0) 50%, rgba(10,22,16,.88) 100%)" }} />
         <div className="wrap flex justify-between" style={{ paddingTop: 16 }}>
@@ -70,17 +73,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
           <div className="flex flex-col gap-2.5 text-white" data-fx="reveal">
             <span className="chip chip-glass self-start">فرع {u.branch_name} · {u.type === "Farm" ? "مزرعة" : "كوخ"}</span>
             <h1 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(32px,4.4vw,56px)", lineHeight: 1.2 }}>{u.name}</h1>
-            {media.length > 1 && (
-              <div className="flex gap-2">
-                {media.slice(0, 4).map((m, i) => (
-                  <a key={m.path_base} href={`/media/${m.path_base}-1600.webp`} target="_blank" rel="noopener" className="block overflow-hidden" style={{ width: 56, height: 42, borderRadius: 10, border: `2px solid ${i ? "rgba(255,255,255,.4)" : "#fff"}` }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/media/${m.path_base}-480.webp`} alt="" loading="lazy" className="w-full h-full object-cover" />
-                  </a>
-                ))}
-                {media.length > 4 && <span className="flex items-center justify-center" style={{ width: 56, height: 42, borderRadius: 10, background: "rgba(255,255,255,.18)", fontSize: 13, fontWeight: 600 }}>+{media.length - 4}</span>}
-              </div>
-            )}
+            {media.length > 0 && <a href="#gallery" className="chip chip-glass self-start"><span className="num">{media.length}</span> صورة وفيديو</a>}
           </div>
         </div>
       </section>
@@ -117,6 +110,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
             />
           </div>
           <div className="flex flex-col gap-6 min-w-0 lg:col-start-1">
+            {media.length > 0 && <div id="gallery" style={{ scrollMarginTop: 24 }}><Gallery items={JSON.parse(JSON.stringify(media)) as GalleryItem[]} title={u.name} /></div>}
             {u.description && <p style={{ margin: 0, fontSize: 17, lineHeight: 1.9 }}>{u.description}</p>}
             {amenities.length > 0 && (
               <section className="flex flex-col gap-3">

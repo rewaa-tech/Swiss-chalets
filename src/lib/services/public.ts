@@ -20,13 +20,15 @@ export async function publicBranches() {
   return q(
     `SELECT b.id, b.name, b.slug, b.city, b.status, b.cover_media_path, b.description,
             (SELECT count(*)::int FROM units u WHERE u.branch_id = b.id AND u.is_active) AS units,
-            (SELECT um.path_base FROM units u JOIN unit_media um ON um.unit_id = u.id WHERE u.branch_id = b.id AND u.is_active ORDER BY um.is_cover DESC, u.sort_order, um.sort_order LIMIT 1) AS fallback_cover
+            (SELECT u.cover_path_base FROM units u WHERE u.branch_id = b.id AND u.is_active AND u.cover_path_base IS NOT NULL ORDER BY u.sort_order, u.id LIMIT 1) AS fallback_cover
        FROM branches b WHERE b.status <> 'Hidden' ORDER BY b.sort_order, b.id`);
 }
 
 export const UNIT_CARD_SQL = `
   SELECT u.id, u.name, u.slug, u.type, u.capacity, u.has_heated_pool, u.allowed_category, b.name AS branch_name, b.slug AS branch_slug,
-         (SELECT path_base FROM unit_media m WHERE m.unit_id = u.id ORDER BY is_cover DESC, sort_order, id LIMIT 1) AS cover,
+         COALESCE(u.cover_path_base, (SELECT path_base FROM unit_media m WHERE m.unit_id = u.id AND m.is_active AND m.path_base <> '' ORDER BY sort_order, id LIMIT 1)) AS cover,
+         u.cover_focal_x AS focal_x, u.cover_focal_y AS focal_y, u.cover_color AS cover_color,
+         ARRAY(SELECT m.path_base FROM unit_media m WHERE m.unit_id = u.id AND m.is_active AND m.status = 'Ready' AND m.kind = 'Image' ORDER BY m.sort_order, m.id LIMIT 3) AS album,
          (SELECT min(price) FROM time_slots t JOIN seasons s ON s.id = t.season_id
            WHERE t.unit_id = u.id AND t.is_active AND s.end_date >= (now() AT TIME ZONE 'Asia/Damascus')::date) AS min_price,
          (SELECT usm.mode FROM unit_season_modes usm JOIN seasons s ON s.id = usm.season_id

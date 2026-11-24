@@ -5,7 +5,7 @@ import { one, q, tx, pgCode } from "@/lib/db";
 import { run, str, int, bool, fileBuf, type ActionState } from "@/lib/actions";
 import { reviewBooking, voidNoDocuments, createManual, type ReviewDecision } from "@/lib/services/booking";
 import { setDays, saveSeasons, setUnitMode, saveSlot, setSlotActive, copySlots, unitInBranch, type SeasonInput } from "@/lib/services/branch-ops";
-import { saveResponsiveImage, deleteResponsiveImage, saveQr, deleteMediaFile } from "@/lib/services/media";
+import { deleteResponsiveImage, deleteVideoFiles, saveQr, deleteMediaFile } from "@/lib/services/media";
 import { invalidateUnit, invalidateAll } from "@/lib/services/cache";
 import { audit } from "@/lib/audit";
 import { bad, conflict, forbidden, notFound } from "@/lib/errors";
@@ -128,50 +128,61 @@ export async function unitActiveAction(_: S, fd: FormData) {
   });
 }
 
-export async function mediaUploadAction(_: S, fd: FormData) {
-  return run(async () => {
-    const u = await actionUser("branch", "units.media");
-    const id = int(fd, "unitId");
-    await unitInBranch(u, id);
-    const files = fd.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
-    if (!files.length) throw bad("اختر صورة واحدة على الأقل");
-    if (files.length > 20) throw bad("الحد الأقصى 20 صورة بالمرة");
-    const count = (await one<{ n: number }>("SELECT count(*)::int n FROM unit_media WHERE unit_id = $1", [id]))?.n ?? 0;
-    let order = count;
-    for (const f of files) {
-      const img = await saveResponsiveImage(Buffer.from(await f.arrayBuffer()), `units/${id}`);
-      await q("INSERT INTO unit_media (unit_id, path_base, width, height, is_cover, sort_order) VALUES ($1,$2,$3,$4,$5,$6)", [id, img.base, img.width, img.height, order === 0, order]);
-      order++;
-    }
-    await audit({ userId: u.id, branchId: u.branchId, action: "UploadMedia", entity: "unit", entityId: id, details: { count: files.length } });
-    revalidatePath(`/branch/units/${id}`);
-    return `تم رفع ${files.length} صورة`;
-  });
-}
-
+/** v3 §3.3 — album and cover operations (uploads go through /branch/api/media in chunks). */
 export async function mediaAction(_: S, fd: FormData) {
   return run(async () => {
     const u = await actionUser("branch", "units.media");
-    const mediaId = int(fd, "mediaId"), op = str(fd, "op");
-    const m = await one("SELECT m.* FROM unit_media m JOIN units un ON un.id = m.unit_id WHERE m.id = $1 AND un.branch_id = $2", [mediaId, u.branchId]);
-    if (!m) throw notFound("الصورة غير موجودة");
-    const all = await q("SELECT id FROM unit_media WHERE unit_id = $1 ORDER BY sort_order, id", [m.unit_id]);
-    const ids = all.map((r) => r.id as number);
-    if (op === "cover") {
-      await tx(async (c) => {
-        await c.query("UPDATE unit_media SET is_cover = (id = $2) WHERE unit_id = $1", [m.unit_id, mediaId]);
-      });
-    } else if (op === "up" || op === "down") {
-      const i = ids.indexOf(mediaId), j = op === "up" ? i - 1 : i + 1;
-      if (j >= 0 && j < ids.length) { [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    const op = str(fd, "op");
+    const unitId = int(fd, "unitId");
+    await unitInBranch(u, unitId);
+    const own = async (ids: number[]) => {
+      const rows = await q("SELECT id, kind, path_base, video_path, width, height, color FROM unit_media WHERE unit_id = $1 AND id = ANY($2::int[])", [unitId, ids]);
+      if (rows.length !== ids.length) throw notFound("عنصر غير موجود");
+      return rows;
+    };
+    const ids = fd.getAll("ids").map(Number).filter(Number.isFinite);
+    let msg = "تم الحفظ";
+    if (op === "reorder") {
+      const all = await q<{ id: number }>("SELECT id FROM unit_media WHERE unit_id = $1", [unitId]);
+      if (ids.length !== all.length || !all.every((r) => ids.includes(r.id))) throw bad("ترتيب غير صالح، حدّث الصفحة");
       await tx(async (c) => { for (let k = 0; k < ids.length; k++) await c.query("UPDATE unit_media SET sort_order = $2 WHERE id = $1", [ids[k], k]); });
+      msg = "تم حفظ الترتيب";
+    } else if (op === "caption") {
+      await own([int(fd, "mediaId")]);
+      await q("UPDATE unit_media SET caption = NULLIF($2,'') WHERE id = $1", [int(fd, "mediaId"), str(fd, "caption").slice(0, 120)]);
+      msg = "تم حفظ الوصف";
+    } else if (op === "hide" || op === "show") {
+      const list = ids.length ? ids : [int(fd, "mediaId")];
+      await own(list);
+      await q("UPDATE unit_media SET is_active = $2 WHERE id = ANY($1::int[])", [list, op === "show"]);
+      msg = op === "hide" ? `تم إخفاء ${list.length} عنصر` : `تم إظهار ${list.length} عنصر`;
     } else if (op === "delete") {
-      await q("DELETE FROM unit_media WHERE id = $1", [mediaId]);
-      await deleteResponsiveImage(m.path_base);
-      if (m.is_cover) await q("UPDATE unit_media SET is_cover = true WHERE id = (SELECT id FROM unit_media WHERE unit_id = $1 ORDER BY sort_order, id LIMIT 1)", [m.unit_id]);
+      const list = ids.length ? ids : [int(fd, "mediaId")];
+      const rows = await own(list);
+      const cover = await one<{ cover_path_base: string | null }>("SELECT cover_path_base FROM units WHERE id = $1", [unitId]);
+      await q("DELETE FROM unit_media WHERE id = ANY($1::int[])", [list]);
+      for (const m of rows) {
+        await deleteVideoFiles(m.video_path);
+        // The cover may share files with an album photo: keep them while the cover uses them.
+        if (m.path_base && m.path_base !== cover?.cover_path_base) await deleteResponsiveImage(m.path_base);
+      }
+      msg = list.length > 1 ? `تم حذف ${list.length} عناصر` : "تم الحذف";
+    } else if (op === "cover-from") {
+      const [m] = await own([int(fd, "mediaId")]);
+      if (!m.path_base) throw bad("الفيديو ما زال قيد المعالجة");
+      await q("UPDATE units SET cover_path_base = $2, cover_width = $3, cover_height = $4, cover_color = $5, cover_focal_x = 50, cover_focal_y = 50 WHERE id = $1",
+        [unitId, m.path_base, m.width, m.height, m.color]);
+      msg = "تم اختيار صورة الغلاف";
+    } else if (op === "focal") {
+      const x = Math.max(0, Math.min(100, Number(fd.get("x")))), y = Math.max(0, Math.min(100, Number(fd.get("y"))));
+      if (!Number.isFinite(x) || !Number.isFinite(y)) throw bad("نقطة غير صالحة");
+      await q("UPDATE units SET cover_focal_x = $2, cover_focal_y = $3 WHERE id = $1", [unitId, x, y]);
+      msg = "تم حفظ نقطة التركيز";
     } else throw bad("إجراء غير معروف");
-    revalidatePath(`/branch/units/${m.unit_id}`);
-    return op === "delete" ? "تم حذف الصورة" : op === "cover" ? "تم اختيار صورة الغلاف" : "تم تغيير الترتيب";
+    await audit({ userId: u.id, branchId: u.branchId, action: "Media:" + op, entity: "unit", entityId: unitId, details: ids.length ? { ids } : undefined });
+    invalidateUnit(unitId);
+    revalidatePath(`/branch/units/${unitId}`);
+    return msg;
   });
 }
 
