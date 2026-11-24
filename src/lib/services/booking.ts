@@ -149,7 +149,7 @@ export async function getBookingByToken(token: string, db?: Db) {
   if (!/^[0-9A-Za-z]{32}$/.test(token)) return null;
   await expireHolds(db);
   return one(
-    `SELECT b.*, u.name AS unit_name, u.slug AS unit_slug, br.name AS branch_name, br.map_url, br.slug AS branch_slug,
+    `SELECT b.*, u.name AS unit_name, u.slug AS unit_slug, br.name AS branch_name, br.map_url, br.lat, br.lng, br.address AS branch_address, br.slug AS branch_slug,
             p.transaction_number, p.proof_kind,
             (SELECT min(lower(period)) FROM booking_items WHERE booking_id = b.id) AS starts_at,
             (SELECT max(upper(period)) FROM booking_items WHERE booking_id = b.id) AS ends_at

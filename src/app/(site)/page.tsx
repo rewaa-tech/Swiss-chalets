@@ -3,6 +3,7 @@ import PublicShell from "@/components/PublicShell";
 import HeroImage from "@/components/HeroImage";
 import SeasonFx from "@/components/SeasonFx";
 import Icon from "@/components/Icon";
+import MapCard from "@/components/MapCard";
 import UnitCard from "@/components/UnitCard";
 import { generalTheme, publicBranches, featuredUnits, siteMeta } from "@/lib/services/public";
 import { THEME_BADGE } from "@/lib/services/theme";
@@ -132,6 +133,14 @@ export default async function Home() {
           <a href="#branches" className="btn btn-light self-start" style={{ minHeight: 56, fontSize: 16 }} data-fx="ripple">اختر فرعك</a>
         </div>
       </section>
+      {active.some((b) => b.lat != null) && (
+        <section id="locations" className="wrap flex flex-col gap-6" style={{ paddingTop: 96 }}>
+          <div className="flex flex-col gap-2"><span className="overline">Our locations</span><h2 className="h2">مواقع فروعنا</h2></div>
+          <div className="map-row">
+            {active.filter((b) => b.lat != null && b.lng != null).map((b) => <MapCard key={b.id} name={b.name} city={b.city} lat={b.lat} lng={b.lng} address={b.address} compact />)}
+          </div>
+        </section>
+      )}
     </PublicShell>
   );
 }

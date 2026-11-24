@@ -8,6 +8,8 @@ import { setDays, saveSeasons, setUnitMode, saveSlot, setSlotActive, copySlots, 
 import { deleteResponsiveImage, deleteVideoFiles, saveQr, deleteMediaFile } from "@/lib/services/media";
 import { invalidateUnit, invalidateAll } from "@/lib/services/cache";
 import { audit } from "@/lib/audit";
+import { validCoords } from "@/lib/geo";
+import { resolveMapLink } from "@/lib/services/location";
 import { bad, conflict, forbidden, notFound } from "@/lib/errors";
 import { createAccount, setAccountPermissions, setAccountActive } from "@/lib/services/accounts";
 import { base62Token, randomHex } from "@/lib/crypto";
@@ -300,16 +302,37 @@ export async function branchSettingsAction(_: S, fd: FormData) {
     const t = /^([01]\d|2[0-3]):[0-5]\d$/;
     if (!t.test(rs)) throw bad("وقت بداية المراجعة غير صحيح", "review_start");
     if (!t.test(re)) throw bad("وقت نهاية المراجعة غير صحيح", "review_end");
+    // v3 §4: location (link → coordinates, or typed in).
+    const mapUrl = str(fd, "map_url"), address = str(fd, "address").slice(0, 200);
+    if (mapUrl && !/^https:\/\//.test(mapUrl)) throw bad("رابط الخريطة يجب أن يبدأ بـ https://", "map_url");
+    let lat: number | null = str(fd, "lat") ? Number(str(fd, "lat")) : null, lng: number | null = str(fd, "lng") ? Number(str(fd, "lng")) : null;
+    if ((lat == null) !== (lng == null) || (lat != null && !validCoords(lat, lng!))) throw bad("الإحداثيات غير صحيحة (مثال: 35.9306 و 36.6339)", "lat");
+    const prevMap = (await one<{ map_url: string | null }>("SELECT map_url FROM branches WHERE id = $1", [u.branchId]))?.map_url ?? null;
+    if (mapUrl && mapUrl !== prevMap) {
+      // A new link wins over coordinates left from the old one.
+      const c = await resolveMapLink(mapUrl);
+      if (c) { lat = c.lat; lng = c.lng; }
+    }
+    if (mapUrl && lat == null) {
+      const c = await resolveMapLink(mapUrl);
+      if (!c) throw bad("ما قدرنا نقرأ الموقع من الرابط. افتح الموقع بخرائط Google، انسخ الرابط من شريط العنوان، أو أدخل الإحداثيات يدويًا", "map_url");
+      lat = c.lat; lng = c.lng;
+    }
+    await q("UPDATE branches SET map_url = $2, lat = $3, lng = $4, address = $5 WHERE id = $1", [u.branchId, mapUrl || null, lat, lng, address || null]);
+    const canPay = u.permissions.has("branch.payment");
     const name = str(fd, "shamcash_account_name").slice(0, 80), number = str(fd, "shamcash_account_number").slice(0, 60);
     if (number && !/^[0-9A-Za-z\- ]{4,60}$/.test(number)) throw bad("رقم الحساب غير صحيح", "shamcash_account_number");
-    const qr = await fileBuf(fd, "qr");
+    const qr = canPay ? await fileBuf(fd, "qr") : null;
     let qrPath: string | null = null;
     if (qr) qrPath = await saveQr(qr.buffer, u.branchId!);
     const old = await one("SELECT shamcash_qr_path FROM branches WHERE id = $1", [u.branchId]);
-    await q(`UPDATE branches SET review_start = $2, review_end = $3, shamcash_account_name = $4, shamcash_account_number = $5 ${qrPath ? ", shamcash_qr_path = $6" : ""} WHERE id = $1`,
-      qrPath ? [u.branchId, rs, re, name || null, number || null, qrPath] : [u.branchId, rs, re, name || null, number || null]);
+    await q("UPDATE branches SET review_start = $2, review_end = $3 WHERE id = $1", [u.branchId, rs, re]);
+    if (canPay) {
+      await q(`UPDATE branches SET shamcash_account_name = $2, shamcash_account_number = $3 ${qrPath ? ", shamcash_qr_path = $4" : ""} WHERE id = $1`,
+        qrPath ? [u.branchId, name || null, number || null, qrPath] : [u.branchId, name || null, number || null]);
+    }
     if (qrPath && old?.shamcash_qr_path) await deleteMediaFile(old.shamcash_qr_path);
-    await audit({ userId: u.id, branchId: u.branchId, action: "UpdateBranchSettings", entity: "branch", entityId: u.branchId, details: { rs, re, qr: !!qrPath } });
+    await audit({ userId: u.id, branchId: u.branchId, action: "UpdateBranchSettings", entity: "branch", entityId: u.branchId, details: { rs, re, qr: !!qrPath, lat, lng } });
     invalidateAll();
     revalidatePath("/branch/settings");
     return "تم حفظ إعدادات الفرع";

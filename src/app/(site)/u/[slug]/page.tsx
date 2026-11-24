@@ -8,6 +8,7 @@ import Icon from "@/components/Icon";
 import BookingWidget from "@/components/booking/BookingWidget";
 import ShareButton from "@/components/ShareButton";
 import Gallery, { type GalleryItem } from "@/components/Gallery";
+import MapCard from "@/components/MapCard";
 import { q, one } from "@/lib/db";
 import { branchTheme, siteMeta } from "@/lib/services/public";
 import { getSettings, fillTemplate } from "@/lib/settings";
@@ -24,7 +25,7 @@ async function load(rawSlug: string) {
   const slug = routeParam(rawSlug);
   if (!slug) return null;
   const u = await one(
-    `SELECT u.*, b.name AS branch_name, b.slug AS branch_slug, b.status AS branch_status, b.review_start, b.review_end
+    `SELECT u.*, b.name AS branch_name, b.slug AS branch_slug, b.status AS branch_status, b.review_start, b.review_end, b.city AS branch_city, b.lat, b.lng, b.address AS branch_address
        FROM units u JOIN branches b ON b.id = u.branch_id WHERE u.slug = $1`, [slug]);
   if (!u) return null;
   const published = u.is_active && u.branch_status === "Active";
@@ -130,8 +131,12 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
               </ul>
             </section>
           </div>
-
         </div>
+        {u.lat != null && u.lng != null && (
+          <div className="wrap" style={{ paddingTop: 56, paddingBottom: 24 }}>
+            <MapCard name={u.branch_name} city={u.branch_city} lat={u.lat} lng={u.lng} address={u.branch_address} reviewStart={u.review_start.slice(0, 5)} reviewEnd={u.review_end.slice(0, 5)} title={`موقع ${u.name}`} />
+          </div>
+        )}
       </div>
     </PublicShell>
   );

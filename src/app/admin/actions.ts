@@ -10,6 +10,7 @@ import { setSetting, invalidateSettings } from "@/lib/settings";
 import { randomHex } from "@/lib/crypto";
 import { saveResponsiveImage, deleteResponsiveImage } from "@/lib/services/media";
 import { invalidateAll } from "@/lib/services/cache";
+import { resolveMapLink } from "@/lib/services/location";
 import { createAccount, setAccountPermissions, setAccountActive } from "@/lib/services/accounts";
 
 type S = ActionState | null;
@@ -25,6 +26,7 @@ export async function branchAction(_: S, fd: FormData) {
     const status = ["Active", "ComingSoon", "Hidden"].includes(str(fd, "status")) ? str(fd, "status") : "Active";
     const map = str(fd, "map_url");
     if (map && !/^https:\/\//.test(map)) throw bad("رابط الخريطة يجب أن يبدأ بـ https://", "map_url");
+    const coords = map ? await resolveMapLink(map) : null;
     const vals = [name, slug, str(fd, "city"), str(fd, "description").slice(0, 1000), map || null, status, int(fd, "sort_order") || 0];
     const cover = await fileBuf(fd, "cover");
     try {
@@ -32,6 +34,7 @@ export async function branchAction(_: S, fd: FormData) {
         let bid = id;
         if (id) await c.query("UPDATE branches SET name=$2, slug=$3, city=$4, description=$5, map_url=$6, status=$7, sort_order=$8 WHERE id=$1", [id, ...vals]);
         else bid = (await c.query("INSERT INTO branches (name, slug, city, description, map_url, status, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id", vals)).rows[0].id;
+        if (coords) await c.query("UPDATE branches SET lat = $2, lng = $3 WHERE id = $1", [bid, coords.lat, coords.lng]);
         await audit({ userId: u.id, branchId: bid, action: id ? "UpdateBranch" : "CreateBranch", entity: "branch", entityId: bid, details: { name, status } }, c);
         return bid;
       });

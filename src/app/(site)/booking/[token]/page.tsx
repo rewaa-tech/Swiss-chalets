@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import PublicShell from "@/components/PublicShell";
 import HeroImage from "@/components/HeroImage";
 import Icon from "@/components/Icon";
+import MapCard from "@/components/MapCard";
 import PaymentStep from "@/components/booking/PaymentStep";
 import StatusPoller from "@/components/booking/StatusPoller";
 import SaveBooking from "@/components/booking/SaveBooking";
@@ -112,9 +113,10 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
           <div className="card flex flex-col gap-2" style={{ padding: 20, borderRadius: 24, background: "#E6F3EA" }}>
             <strong style={{ color: "var(--success)", fontFamily: "var(--f-head)" }}>عند الوصول</strong>
             <p style={{ margin: 0, lineHeight: 1.8 }}>{s.documents_text}</p>
-            {b.map_url && <a className="btn btn-dark self-start" href={b.map_url} target="_blank" rel="noopener noreferrer"><Icon name="map" size={18} />افتح الموقع على الخريطة</a>}
+            {b.lat == null && b.map_url && <a className="btn btn-dark self-start" href={b.map_url} target="_blank" rel="noopener noreferrer"><Icon name="map" size={18} />افتح الموقع على الخريطة</a>}
           </div>
         )}
+        {status === "Confirmed" && b.lat != null && b.lng != null && <MapCard name={b.branch_name} lat={b.lat} lng={b.lng} address={b.branch_address} compact />}
         {status === "Expired" && <a href={`/u/${b.unit_slug}`} className="btn btn-cta btn-block">اختر وقتًا آخر</a>}
         {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-wa btn-block" style={{ minHeight: 56 }}><Icon name="wa" size={22} />تواصل مع الفرع عبر واتساب</a>}
       </div>

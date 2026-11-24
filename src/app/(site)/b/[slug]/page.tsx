@@ -6,6 +6,7 @@ import HeroImage from "@/components/HeroImage";
 import SeasonFx from "@/components/SeasonFx";
 import Icon from "@/components/Icon";
 import UnitCard from "@/components/UnitCard";
+import MapCard from "@/components/MapCard";
 import { q } from "@/lib/db";
 import { branchBySlug, branchTheme, siteMeta, UNIT_CARD_SQL } from "@/lib/services/public";
 import { THEME_BADGE } from "@/lib/services/theme";
@@ -59,7 +60,7 @@ export default async function BranchPage({ params, searchParams }: { params: Pro
           <span className="flex-none flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(46,111,115,.1)" }}><Icon name="map" size={24} stroke="var(--teal)" /></span>
           <div>
             <div style={{ fontFamily: "var(--f-head)", fontWeight: 600, color: "var(--forest)" }}>الموقع</div>
-            {b.map_url ? <a href={b.map_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)", fontWeight: 600 }}>افتح الخريطة</a> : <span className="muted">يُرسل مع تأكيد الحجز</span>}
+            {b.lat != null ? <a href="#location" style={{ color: "var(--teal)", fontWeight: 600 }}>شوف الموقع على الخريطة</a> : b.map_url ? <a href={b.map_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)", fontWeight: 600 }}>افتح الخريطة</a> : <span className="muted">يُرسل مع تأكيد الحجز</span>}
           </div>
         </div>
       </section>
@@ -84,6 +85,11 @@ export default async function BranchPage({ params, searchParams }: { params: Pro
           <div className="card empty"><span className="empty-ico"><Icon name="home" size={30} stroke="var(--stone)" /></span><strong style={{ fontFamily: "var(--f-head)", color: "var(--forest-deep)" }}>لا توجد وحدات مطابقة</strong><span>جرّب تصفية أخرى، أو تواصل معنا عبر واتساب.</span></div>
         )}
       </section>
+      {b.lat != null && b.lng != null && (
+        <section id="location" className="wrap" style={{ paddingTop: 72, scrollMarginTop: 24 }}>
+          <MapCard name={b.name} city={b.city} lat={b.lat} lng={b.lng} address={b.address} reviewStart={b.review_start.slice(0, 5)} reviewEnd={b.review_end.slice(0, 5)} />
+        </section>
+      )}
     </PublicShell>
   );
 }

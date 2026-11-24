@@ -18,7 +18,7 @@ export async function branchTheme(branchId: number): Promise<{ theme: Theme; sea
 
 export async function publicBranches() {
   return q(
-    `SELECT b.id, b.name, b.slug, b.city, b.status, b.cover_media_path, b.description,
+    `SELECT b.id, b.name, b.slug, b.city, b.status, b.cover_media_path, b.description, b.lat, b.lng, b.address,
             (SELECT count(*)::int FROM units u WHERE u.branch_id = b.id AND u.is_active) AS units,
             (SELECT u.cover_path_base FROM units u WHERE u.branch_id = b.id AND u.is_active AND u.cover_path_base IS NOT NULL ORDER BY u.sort_order, u.id LIMIT 1) AS fallback_cover
        FROM branches b WHERE b.status <> 'Hidden' ORDER BY b.sort_order, b.id`);
