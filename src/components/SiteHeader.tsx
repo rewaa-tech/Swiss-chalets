@@ -1,15 +1,18 @@
 import Link from "next/link";
 import Logo from "./Logo";
+import { textHelpers } from "@/lib/texts/jsx";
+import { DEFAULT_TEXTS, type TextDict } from "@/lib/texts/registry";
 
 const links = [
-  { href: "/", label: "الرئيسية", key: "home" },
-  { href: "/#branches", label: "الفروع", key: "branches" },
-  { href: "/#units", label: "الأكواخ", key: "units" },
-  { href: "/#how", label: "كيف تحجز", key: "how" },
-  { href: "/my", label: "طلباتي", key: "my" },
-];
+  { href: "/", label: "nav.home", key: "home" },
+  { href: "/#branches", label: "nav.branches", key: "branches" },
+  { href: "/#units", label: "nav.units", key: "units" },
+  { href: "/#how", label: "nav.how", key: "how" },
+  { href: "/my", label: "nav.my", key: "my" },
+] as const;
 
-export default function SiteHeader({ active = "home", floating = true }: { active?: string; floating?: boolean }) {
+export default function SiteHeader({ active = "home", floating = true, dict = DEFAULT_TEXTS }: { active?: string; floating?: boolean; dict?: TextDict }) {
+  const { T } = textHelpers(dict);
   return (
     <header
       data-fx="nav"
@@ -19,12 +22,12 @@ export default function SiteHeader({ active = "home", floating = true }: { activ
       <Link href="/" aria-label="الأكواخ السويسرية — الرئيسية"><Logo /></Link>
       <nav aria-label="القائمة الرئيسية" className="hidden md:flex flex-wrap gap-1.5">
         {links.map((l) => (
-          <Link key={l.key} href={l.href} className="nav-link" aria-current={active === l.key ? "page" : undefined}>{l.label}</Link>
+          <Link key={l.key} href={l.href} className="nav-link" aria-current={active === l.key ? "page" : undefined}>{T(l.label)}</Link>
         ))}
       </nav>
       <div className="flex items-center gap-2">
-        <Link href="/my" className="md:hidden nav-link">طلباتي</Link>
-        <Link href="/#branches" className="btn btn-dark btn-sm" data-fx="ripple">احجز الآن</Link>
+        <Link href="/my" className="md:hidden nav-link">{T("nav.my")}</Link>
+        <Link href="/#branches" className="btn btn-dark btn-sm" data-fx="ripple">{T("nav.cta")}</Link>
       </div>
     </header>
   );
