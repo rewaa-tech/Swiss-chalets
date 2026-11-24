@@ -9,7 +9,7 @@ const dur = (s: number | null) => (s == null ? "" : `${Math.floor(s / 60)}:${Str
 const reduce = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** v3 §3.4 — Bento grid (desktop) / swipe strip (mobile) + full-screen lightbox with swipe, keys, pinch/double-tap zoom and video. */
-export default function Gallery({ items, title }: { items: GalleryItem[]; title: string }) {
+export default function Gallery({ items, title, heading = "الصور والفيديو" }: { items: GalleryItem[]; title: string; heading?: string }) {
   const [open, setOpen] = useState<number | null>(null);
   const origin = useRef<HTMLElement | null>(null);
   if (!items.length) return null;
@@ -20,7 +20,7 @@ export default function Gallery({ items, title }: { items: GalleryItem[]; title:
     <section className="gallery" aria-label={`صور وفيديو ${title}`}>
       <div className="gallery-head">
         <span className="overline">Gallery</span>
-        <h2>الصور والفيديو</h2>
+        <h2 data-tk="unit.gallery.title">{heading}</h2>
         <span className="muted num">{items.length} {items.length > 10 ? "عنصرًا" : "عناصر"}</span>
       </div>
       <ul className={`bento bento-${Math.min(tiles.length, 5)}`}>

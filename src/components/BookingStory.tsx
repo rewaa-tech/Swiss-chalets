@@ -14,7 +14,7 @@ export interface StoryLabels {
 const N = 4;
 const AUTO_GAP = 2200;
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const desktop = () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
+const desktopMq = () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
 
 /**
  * v3 §8.5-ج — "how to book" told as four short animated scenes on a live booking card.
@@ -22,7 +22,7 @@ const desktop = () => typeof window !== "undefined" && window.matchMedia("(min-w
  * Auto-plays when idle, pauses off-screen / hidden tab, has pause + replay (WCAG 2.2.2),
  * and shows each scene's final state without motion under prefers-reduced-motion.
  */
-export default function BookingStory({ steps, labels: L }: { steps: StoryStep[]; labels: StoryLabels }) {
+export default function BookingStory({ steps, labels: L, compact = false }: { steps: StoryStep[]; labels: StoryLabels; compact?: boolean }) {
   const [step, setStep] = useState(0);
   const [paused, setPaused] = useState(false);
   const root = useRef<HTMLElement>(null);
@@ -33,6 +33,7 @@ export default function BookingStory({ steps, labels: L }: { steps: StoryStep[];
   const inView = useRef(false);
   const userPaused = useRef(false);
   const scrollStep = useRef(-1);
+  const desktop = useCallback(() => !compact && desktopMq(), [compact]);
   const stepRef = useRef(0);
 
   const $ = useCallback((sel: string) => (stage.current?.querySelector<HTMLElement>(sel) ?? null), []);
@@ -224,7 +225,7 @@ export default function BookingStory({ steps, labels: L }: { steps: StoryStep[];
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => { io.disconnect(); document.removeEventListener("visibilitychange", vis); window.removeEventListener("scroll", onScroll); tl.current?.cancel(); if (auto.current) clearTimeout(auto.current); };
-  }, [run]);
+  }, [run, desktop]);
 
   const jump = (i: number) => {
     if (desktop() && !reduced()) {
@@ -241,7 +242,7 @@ export default function BookingStory({ steps, labels: L }: { steps: StoryStep[];
   };
 
   return (
-    <section ref={root} className="story" aria-roledescription="عرض تفاعلي">
+    <section ref={root} className={`story${compact ? " is-compact" : ""}`} aria-roledescription="عرض تفاعلي">
       <div className="story-sticky">
         <div className="story-steps">
           <span className="story-rail" aria-hidden><span style={{ transform: `scaleY(${(step + 1) / N})` }} /></span>

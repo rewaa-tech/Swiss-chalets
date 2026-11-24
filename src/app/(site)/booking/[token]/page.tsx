@@ -14,6 +14,8 @@ import { getSettings } from "@/lib/settings";
 import { fmtDayAr, fmtTime, fmtDateTimeAr } from "@/lib/time";
 import { resolveContact } from "@/lib/services/contacts";
 import { waLink } from "@/lib/phone";
+import { getTexts } from "@/lib/texts/server";
+import { textHelpers } from "@/lib/texts/jsx";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "طلب الحجز", robots: { index: false } };
@@ -24,9 +26,10 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   const [{ theme }, meta, pay, s, items, cover, branch] = await Promise.all([
     branchTheme(b.branch_id), siteMeta(), paymentInfo(b.branch_id), getSettings(),
     q("SELECT bi.day, lower(bi.period) AS s, upper(bi.period) AS e, bi.price, ts.name FROM booking_items bi JOIN time_slots ts ON ts.id = bi.time_slot_id WHERE bi.booking_id = $1 ORDER BY bi.day", [b.id]),
-    one("SELECT path_base FROM unit_media WHERE unit_id = $1 ORDER BY is_cover DESC, sort_order LIMIT 1", [b.unit_id]),
+    one("SELECT COALESCE(u.cover_path_base, (SELECT path_base FROM unit_media m WHERE m.unit_id = u.id AND m.path_base <> '' ORDER BY sort_order LIMIT 1)) AS path_base FROM units u WHERE u.id = $1", [b.unit_id]),
     one("SELECT shamcash_qr_path FROM branches WHERE id = $1", [b.branch_id]),
   ]);
+  const { t, T } = textHelpers(await getTexts(b.branch_id));
   const status = b.status as BookingStatus;
   const late = status === "Expired" ? await canLateUpload(b.id, b.unit_id) : false;
   const phone = await resolveContact("Booking", b.id, b.branch_id);
@@ -48,20 +51,20 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   }
 
   const view = {
-    PendingReview: { icon: "clock", color: "var(--sand)", title: "طلبك بانتظار التأكيد", text: "وصلنا إشعار الدفع، والوقت محجوز باسمك. نراجع الدفعة ونؤكد لك عبر واتساب." },
-    Confirmed: { icon: "check", color: "#7BD6A0", title: "تم تثبيت حجزك", text: "ننتظركم! لا تنسَ إحضار الثبوتيات عند الوصول." },
-    Completed: { icon: "star", color: "var(--sand)", title: "شكرًا لإقامتكم", text: "نتمنى أن تكون إقامتكم ممتعة. ننتظركم مرة أخرى." },
-    Rejected: { icon: "close", color: "#F2A39C", title: "لم نتمكن من تثبيت طلبك", text: b.reject_reason ? `السبب: ${b.reject_reason}` : "تواصل مع الفرع للمزيد من التفاصيل." },
-    Expired: { icon: "alert", color: "#F2A39C", title: "انتهت مهلة الدفع", text: "حُجز الوقت لغيرك أو انتهى. اختر وقتًا آخر أو تواصل معنا." },
-    VoidNoDocuments: { icon: "ban", color: "#F2A39C", title: "أُلغي الحجز", text: "أُلغي الحجز لعدم إحضار الثبوتيات المطلوبة." },
+    PendingReview: { icon: "clock", color: "var(--sand)", title: T("st.pending.t"), text: T("st.pending.d") },
+    Confirmed: { icon: "check", color: "#7BD6A0", title: T("st.confirmed.t"), text: T("st.confirmed.d") },
+    Completed: { icon: "star", color: "var(--sand)", title: T("st.completed.t"), text: T("st.completed.d") },
+    Rejected: { icon: "close", color: "#F2A39C", title: T("st.rejected.t"), text: b.reject_reason ? t("st.rejected.reason", { "السبب": b.reject_reason }) : T("st.rejected.d") },
+    Expired: { icon: "alert", color: "#F2A39C", title: T("st.expired.t"), text: T("st.expired.d") },
+    VoidNoDocuments: { icon: "ban", color: "#F2A39C", title: T("st.void.t"), text: T("st.void.d") },
     Held: { icon: "clock", color: "var(--sand)", title: "", text: "" },
   }[status];
   const stage = { PendingReview: 2, Confirmed: 4, Completed: 4, Rejected: 3, Expired: 1, VoidNoDocuments: 4, Held: 1 }[status];
   const steps = [
-    ["استلمنا طلبك", fmtDateTimeAr(b.created_at)],
-    ["وصل إشعار الدفع", b.proof_at ? fmtDateTimeAr(b.proof_at) : "—"],
-    ["مراجعة الفرع", status === "PendingReview" ? `خلال أوقات المراجعة ${pay.reviewStart}–${pay.reviewEnd}` : b.reviewed_at ? fmtDateTimeAr(b.reviewed_at) : "—"],
-    [status === "Rejected" ? "مرفوض" : status === "VoidNoDocuments" ? "ملغى" : "تثبيت الحجز", status === "Confirmed" || status === "Completed" ? "تم ✓" : "—"],
+    [t("st.step1"), fmtDateTimeAr(b.created_at)],
+    [t("st.step2"), b.proof_at ? fmtDateTimeAr(b.proof_at) : "—"],
+    [t("st.step3"), status === "PendingReview" ? t("st.step3.during", { "البداية": pay.reviewStart, "النهاية": pay.reviewEnd }) : b.reviewed_at ? fmtDateTimeAr(b.reviewed_at) : "—"],
+    [status === "Rejected" ? "مرفوض" : status === "VoidNoDocuments" ? "ملغى" : t("st.step4"), status === "Confirmed" || status === "Completed" ? "تم ✓" : "—"],
   ];
 
   return (
@@ -111,14 +114,14 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
         </div>
         {(status === "Confirmed") && (
           <div className="card flex flex-col gap-2" style={{ padding: 20, borderRadius: 24, background: "#E6F3EA" }}>
-            <strong style={{ color: "var(--success)", fontFamily: "var(--f-head)" }}>عند الوصول</strong>
+            <strong style={{ color: "var(--success)", fontFamily: "var(--f-head)" }}>{T("st.arrive")}</strong>
             <p style={{ margin: 0, lineHeight: 1.8 }}>{s.documents_text}</p>
             {b.lat == null && b.map_url && <a className="btn btn-dark self-start" href={b.map_url} target="_blank" rel="noopener noreferrer"><Icon name="map" size={18} />افتح الموقع على الخريطة</a>}
           </div>
         )}
         {status === "Confirmed" && b.lat != null && b.lng != null && <MapCard name={b.branch_name} lat={b.lat} lng={b.lng} address={b.branch_address} compact />}
-        {status === "Expired" && <a href={`/u/${b.unit_slug}`} className="btn btn-cta btn-block">اختر وقتًا آخر</a>}
-        {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-wa btn-block" style={{ minHeight: 56 }}><Icon name="wa" size={22} />تواصل مع الفرع عبر واتساب</a>}
+        {status === "Expired" && <a href={`/u/${b.unit_slug}`} className="btn btn-cta btn-block">{T("st.pickOther")}</a>}
+        {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-wa btn-block" style={{ minHeight: 56 }}><Icon name="wa" size={22} />{T("st.wa")}</a>}
       </div>
     </PublicShell>
   );

@@ -9,6 +9,8 @@ import BookingWidget from "@/components/booking/BookingWidget";
 import ShareButton from "@/components/ShareButton";
 import Gallery, { type GalleryItem } from "@/components/Gallery";
 import MapCard from "@/components/MapCard";
+import { getTexts } from "@/lib/texts/server";
+import { textHelpers } from "@/lib/texts/jsx";
 import { q, one } from "@/lib/db";
 import { branchTheme, siteMeta } from "@/lib/services/public";
 import { getSettings, fillTemplate } from "@/lib/settings";
@@ -43,13 +45,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function UnitPage({ params }: { params: Promise<{ slug: string }> }) {
   const u = await load((await params).slug);
   if (!u) notFound();
-  const [{ theme, season }, meta, media, amenities, s] = await Promise.all([
+  const [{ theme, season }, meta, media, amenities, s, dict] = await Promise.all([
     branchTheme(u.branch_id), siteMeta(),
     q(`SELECT id, kind, path_base AS base, width AS w, height AS h, caption, color, video_path AS video, video_hd AS hd, duration_seconds AS duration
          FROM unit_media WHERE unit_id = $1 AND is_active AND status = 'Ready' AND path_base <> '' ORDER BY sort_order, id`, [u.id]),
     q("SELECT a.name, a.icon FROM unit_amenities ua JOIN amenities a ON a.id = ua.amenity_id WHERE ua.unit_id = $1 ORDER BY a.id", [u.id]),
-    getSettings(),
+    getSettings(), getTexts(u.branch_id),
   ]);
+  const { t, T } = textHelpers(dict);
   const mode = season ? await one("SELECT mode FROM unit_season_modes WHERE unit_id = $1 AND season_id = $2", [u.id, season.id]) : null;
   const coverBase = u.cover_path_base ?? media.find((m) => m.kind === "Image")?.base ?? null;
   const cover = coverBase ? `/media/${coverBase}` : meta.hero;
@@ -72,9 +75,9 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
         </div>
         <div className="wrap flex-1 flex items-end" style={{ paddingBottom: 56 }}>
           <div className="flex flex-col gap-2.5 text-white" data-fx="reveal">
-            <span className="chip chip-glass self-start">فرع {u.branch_name} · {u.type === "Farm" ? "مزرعة" : "كوخ"}</span>
+            <span className="chip chip-glass self-start">{t("branch.title", { "الفرع": u.branch_name })} · {u.type === "Farm" ? T("unit.type.farm") : T("unit.type.chalet")}</span>
             <h1 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(32px,4.4vw,56px)", lineHeight: 1.2 }}>{u.name}</h1>
-            {media.length > 0 && <a href="#gallery" className="chip chip-glass self-start"><span className="num">{media.length}</span> صورة وفيديو</a>}
+            {media.length > 0 && <a href="#gallery" className="chip chip-glass self-start">{T("unit.mediaCount", { "العدد": media.length })}</a>}
           </div>
         </div>
       </section>
@@ -83,8 +86,8 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
         <div className="wrap grid gap-6 lg:grid-cols-[1fr_420px]" style={{ paddingTop: 24 }}>
           <div className="flex flex-col gap-6 min-w-0">
             <div className="grid grid-cols-3 gap-3">
-              {[{ i: "users", t: `حتى ${u.capacity}`, d: "أشخاص" }, { i: "bed", t: String(u.bedrooms), d: "غرف نوم" }, { i: "bath", t: String(u.bathrooms), d: "حمامات" }].map((f) => (
-                <div key={f.d} className="card flex flex-col items-center gap-1 text-center" style={{ padding: "16px 8px", borderRadius: 20 }}>
+              {[{ i: "users", t: t("unit.fact.upTo", { "العدد": u.capacity }), d: T("unit.fact.persons"), k: 1 }, { i: "bed", t: String(u.bedrooms), d: T("unit.fact.bedrooms"), k: 2 }, { i: "bath", t: String(u.bathrooms), d: T("unit.fact.bathrooms"), k: 3 }].map((f) => (
+                <div key={f.k} className="card flex flex-col items-center gap-1 text-center" style={{ padding: "16px 8px", borderRadius: 20 }}>
                   <Icon name={f.i} size={24} stroke="var(--teal)" />
                   <span className="num" style={{ fontFamily: "var(--f-head)", fontWeight: 700, color: "var(--forest-deep)" }}>{f.t}</span>
                   <span className="muted" style={{ fontSize: 13 }}>{f.d}</span>
@@ -94,7 +97,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
             <div className="flex items-center gap-3" style={{ padding: "14px 18px", borderRadius: 18, background: theme === "summer" ? "#E2F4F2" : theme === "winter" ? "#F8E8DC" : "var(--line-soft)" }}>
               <Icon name={season?.kind === "Winter" ? "snow" : season?.kind === "Summer" ? "sun" : "leaf"} size={22} stroke="var(--accent)" />
               <span style={{ fontSize: 15 }}>
-                {season ? <>الموسم الحالي: <strong>{SEASON_AR[season.kind]}</strong> · {mode?.mode === "Hotel" ? "حجز بالليلة (فندقي)" : mode?.mode === "Pool" ? `فترات مسبح${u.has_heated_pool && season.kind === "Winter" ? " · مسبح مدفأ" : ""}` : "غير متاح للحجز حاليًا"}</> : "لا يوجد موسم حجز حالي"}
+                {season ? <>{T("unit.season.current")} <strong>{SEASON_AR[season.kind]}</strong> · {mode?.mode === "Hotel" ? T("unit.season.hotel") : mode?.mode === "Pool" ? <>{T("unit.season.pool")}{u.has_heated_pool && season.kind === "Winter" ? <> · {T("unit.season.heated")}</> : null}</> : T("unit.season.off")}</> : T("unit.season.none")}
               </span>
             </div>
           </div>
@@ -111,21 +114,21 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
             />
           </div>
           <div className="flex flex-col gap-6 min-w-0 lg:col-start-1">
-            {media.length > 0 && <div id="gallery" style={{ scrollMarginTop: 24 }}><Gallery items={JSON.parse(JSON.stringify(media)) as GalleryItem[]} title={u.name} /></div>}
+            {media.length > 0 && <div id="gallery" style={{ scrollMarginTop: 24 }}><Gallery items={JSON.parse(JSON.stringify(media)) as GalleryItem[]} title={u.name} heading={t("unit.gallery.title")} /></div>}
             {u.description && <p style={{ margin: 0, fontSize: 17, lineHeight: 1.9 }}>{u.description}</p>}
             {amenities.length > 0 && (
               <section className="flex flex-col gap-3">
-                <h2 style={{ fontSize: 20 }}>المرافق</h2>
+                <h2 style={{ fontSize: 20 }}>{T("unit.amenities")}</h2>
                 <ul className="flex flex-wrap gap-2" style={{ margin: 0, padding: 0, listStyle: "none" }}>
                   {amenities.map((a) => <li key={a.name} className="chip" style={{ background: "#fff", color: "var(--forest)", boxShadow: "var(--sh-card)", fontSize: 14 }}><Icon name={a.icon} size={16} />{a.name}</li>)}
                 </ul>
               </section>
             )}
             <section className="flex flex-col gap-2">
-              <h2 style={{ fontSize: 20 }}>القواعد</h2>
+              <h2 style={{ fontSize: 20 }}>{T("unit.rules")}</h2>
               <ul style={{ margin: 0, paddingInlineStart: 20, lineHeight: 1.9 }}>
-                <li>{u.allowed_category === "FamilyOnly" ? "هذه الوحدة مخصصة للعائلات فقط." : "متاحة للعائلات والشباب."}</li>
-                <li>السعر ثابت حتى {u.capacity} أشخاص.</li>
+                <li>{u.allowed_category === "FamilyOnly" ? T("unit.rules.family") : T("unit.rules.both")}</li>
+                <li>{T("unit.rules.price", { "العدد": u.capacity })}</li>
                 {u.rules?.split("\n").filter(Boolean).map((r: string) => <li key={r}>{r}</li>)}
                 <li>{s.documents_text}</li>
               </ul>
@@ -134,7 +137,7 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
         </div>
         {u.lat != null && u.lng != null && (
           <div className="wrap" style={{ paddingTop: 56, paddingBottom: 24 }}>
-            <MapCard name={u.branch_name} city={u.branch_city} lat={u.lat} lng={u.lng} address={u.branch_address} reviewStart={u.review_start.slice(0, 5)} reviewEnd={u.review_end.slice(0, 5)} title={`موقع ${u.name}`} />
+            <MapCard name={u.branch_name} city={u.branch_city} lat={u.lat} lng={u.lng} address={u.branch_address} reviewStart={u.review_start.slice(0, 5)} reviewEnd={u.review_end.slice(0, 5)} title={t("unit.mapTitle", { "الوحدة": u.name })} labels={{ directions: t("map.directions"), hours: t("map.hours") }} />
           </div>
         )}
       </div>

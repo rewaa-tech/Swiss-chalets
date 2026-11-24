@@ -32,7 +32,7 @@ export default async function PublicShell({ theme, page, entityId, branchId, waT
         {header && <SiteHeader active={active} dict={dict} />}
         <main id="main">{children}</main>
         {footer && <SiteFooter dict={dict} />}
-        <WhatsAppFab phone={phone} text={waText} />
+        <WhatsAppFab phone={phone} text={waText} label={dict["wa.fab"]} />
         {editor && <InlineTextEditor branchScope={editor.branchScope} scopeLabel={editor.label} />}
       </div>
     </TextsProvider>

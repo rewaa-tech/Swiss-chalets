@@ -111,6 +111,14 @@ export const TEXTS = {
   "branch.emptyTitle": { page: "branch", section: "الوحدات", label: "لا وحدات · العنوان", def: "لا توجد وحدات مطابقة", max: 60 },
   "branch.emptyText": { page: "branch", section: "الوحدات", label: "لا وحدات · النص", def: "جرّب تصفية أخرى، أو تواصل معنا عبر واتساب.", max: 160 },
 
+  // ── Unit cards ──
+  "card.hotel": { page: "branch", section: "بطاقات الوحدات", label: "شارة فندقي", def: "فندقي", max: 20 },
+  "card.heated": { page: "branch", section: "بطاقات الوحدات", label: "شارة مسبح مدفأ", def: "مسبح مدفأ", max: 20 },
+  "card.pool": { page: "branch", section: "بطاقات الوحدات", label: "شارة مسبح خاص", def: "مسبح خاص", max: 20 },
+  "card.from": { page: "branch", section: "بطاقات الوحدات", label: "يبدأ من", def: "يبدأ من", max: 20 },
+  "card.meta": { page: "branch", section: "بطاقات الوحدات", label: "السطر الثاني", def: "فرع {الفرع} · حتى {العدد} أشخاص", max: 60, vars: ["الفرع", "العدد"] },
+  "card.noPhotos": { page: "branch", section: "بطاقات الوحدات", label: "بلا صور", def: "الصور تُضاف قريبًا", max: 40 },
+
   // ── Unit page ──
   "unit.type.chalet": { page: "unit", section: "الواجهة", label: "نوع: كوخ", def: "كوخ", max: 20 },
   "unit.type.farm": { page: "unit", section: "الواجهة", label: "نوع: مزرعة", def: "مزرعة", max: 20 },

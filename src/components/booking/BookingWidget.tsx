@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "../Icon";
 import Sheet from "../Sheet";
+import BookingStory from "../BookingStory";
+import { useTexts } from "../Texts";
 import { hhmm, dayLabel, monthLabel, money, shiftMonth, saveMyBooking, problemMessage } from "./client-utils";
 
 interface Day { date: string; state: "full" | "partial" | "unavailable"; freeSlots: number; minPrice: number | null }
@@ -15,6 +17,7 @@ export default function BookingWidget({ unit, currency, today, maxDate, formStam
   unit: UnitInfo; currency: string; today: string; maxDate: string; formStamp: string; mechanism: string; documents: string; todayLabel: string;
 }) {
   const router = useRouter();
+  const { t, T } = useTexts();
   const [month, setMonth] = useState(today.slice(0, 7));
   const [days, setDays] = useState<Day[] | null>(null);
   const [calErr, setCalErr] = useState<string | null>(null);
@@ -32,8 +35,8 @@ export default function BookingWidget({ unit, currency, today, maxDate, formStam
       const r = await fetch(`/api/units/${unit.id}/calendar?month=${m}`);
       if (!r.ok) throw new Error((await problemMessage(r)).message);
       setDays(await r.json());
-    } catch (e) { setCalErr((e as Error).message || "تعذّر تحميل التقويم"); }
-  }, [unit.id]);
+    } catch (e) { setCalErr((e as Error).message || t("cal.loadError")); }
+  }, [unit.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { loadMonth(month); }, [month, loadMonth]);
 
@@ -71,15 +74,15 @@ export default function BookingWidget({ unit, currency, today, maxDate, formStam
     <aside id="book" className="flex flex-col gap-4 lg:sticky lg:top-6 self-start w-full" aria-label="الحجز">
       <div className="card" style={{ padding: 18, borderRadius: 26 }}>
         <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-          <button type="button" className="btn btn-icon btn-outline" disabled={!canPrev} onClick={() => setMonth(shiftMonth(month, -1))} aria-label="الشهر السابق"><Icon name="back" size={18} width={2} /></button>
+          <button type="button" className="btn btn-icon btn-outline" disabled={!canPrev} onClick={() => setMonth(shiftMonth(month, -1))} aria-label={t("cal.prev")}><Icon name="back" size={18} width={2} /></button>
           <h2 style={{ fontSize: 18 }} aria-live="polite">{monthLabel(month)}</h2>
-          <button type="button" className="btn btn-icon btn-outline" disabled={!canNext} onClick={() => setMonth(shiftMonth(month, 1))} aria-label="الشهر التالي"><Icon name="arrow" size={18} width={2} /></button>
+          <button type="button" className="btn btn-icon btn-outline" disabled={!canNext} onClick={() => setMonth(shiftMonth(month, 1))} aria-label={t("cal.next")}><Icon name="arrow" size={18} width={2} /></button>
         </div>
         <div className="cal-grid" style={{ marginBottom: 6 }} aria-hidden>
           {WEEK.map((w) => <span key={w} className="muted" style={{ fontSize: 12, textAlign: "center", fontWeight: 600 }}>{w}</span>)}
         </div>
         {calErr ? (
-          <div className="empty" style={{ padding: 24 }}><span>{calErr}</span><button className="btn btn-outline btn-sm" onClick={() => loadMonth(month)}>إعادة المحاولة</button></div>
+          <div className="empty" style={{ padding: 24 }}><span>{calErr}</span><button className="btn btn-outline btn-sm" onClick={() => loadMonth(month)}>{T("cal.retry")}</button></div>
         ) : !days ? (
           <div className="cal-grid">{Array.from({ length: 35 }, (_, i) => <span key={i} className="skeleton" style={{ aspectRatio: "1" }} />)}</div>
         ) : (
@@ -91,37 +94,37 @@ export default function BookingWidget({ unit, currency, today, maxDate, formStam
                 {Number(d.date.slice(8))}
                 {d.state !== "unavailable" && <span className="dot" />}
                 {hover === d.date && d.state !== "unavailable" && (
-                  <span className="cal-tip" role="tooltip">{d.freeSlots} فترات متاحة · يبدأ من {money(d.minPrice ?? 0, currency)}</span>
+                  <span className="cal-tip" role="tooltip">{t("cal.tip", { "العدد": d.freeSlots, "السعر": money(d.minPrice ?? 0, currency) })}</span>
                 )}
               </button>
             ) : <span key={`e${i}`} />)}
           </div>
         )}
         <div className="flex flex-wrap gap-3 muted" style={{ fontSize: 12, marginTop: 12 }}>
-          <span className="flex items-center gap-1.5"><span style={{ width: 12, height: 12, borderRadius: 4, background: "#fff", border: "1px solid var(--line)" }} />متاح</span>
-          <span className="flex items-center gap-1.5"><span style={{ width: 12, height: 12, borderRadius: 4, background: "var(--cal-partial)" }} />محجوز جزئيًا</span>
-          <span className="flex items-center gap-1.5"><span style={{ width: 12, height: 12, borderRadius: 4, background: "var(--cal-off)" }} />غير متاح</span>
+          <span className="flex items-center gap-1.5"><span style={{ width: 12, height: 12, borderRadius: 4, background: "#fff", border: "1px solid var(--line)" }} />{T("cal.legend.free")}</span>
+          <span className="flex items-center gap-1.5"><span style={{ width: 12, height: 12, borderRadius: 4, background: "var(--cal-partial)" }} />{T("cal.legend.partial")}</span>
+          <span className="flex items-center gap-1.5"><span style={{ width: 12, height: 12, borderRadius: 4, background: "var(--cal-off)" }} />{T("cal.legend.off")}</span>
         </div>
       </div>
 
       {day && (
         <div className="flex flex-col gap-2.5" aria-live="polite">
-          <h3 style={{ fontSize: 17 }}>الفترات · {dayLabel(day)}</h3>
+          <h3 style={{ fontSize: 17 }}>{T("slots.title")} · {dayLabel(day)}</h3>
           {!slots ? [0, 1].map((i) => <span key={i} className="skeleton" style={{ height: 70, borderRadius: 20 }} />)
-            : !slots.length ? <p className="muted" style={{ margin: 0 }}>لا توجد فترات بهذا اليوم.</p>
+            : !slots.length ? <p className="muted" style={{ margin: 0 }}>{T("slots.none")}</p>
             : slots.map((s) => (
               <button key={s.slotId} type="button" className="slot-card" disabled={!s.available} aria-pressed={slotId === s.slotId} onClick={() => { setSlotId(s.slotId); setNights(1); }} data-fx="ripple">
                 <span className="flex flex-col">
                   <span style={{ fontFamily: "var(--f-head)", fontWeight: 600 }}>{s.name}</span>
                   <span className="num" dir="ltr" style={{ fontSize: 14, opacity: .8, textAlign: "right" }}>{hhmm(s.start)} – {hhmm(s.end)}</span>
                 </span>
-                <span className="num" style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 18 }}>{s.available ? money(s.price, currency) : "محجوز"}</span>
+                <span className="num" style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 18 }}>{s.available ? money(s.price, currency) : t("slots.taken")}</span>
               </button>
             ))}
           {isHotel && (
             <div className="card flex items-center justify-between gap-3" style={{ padding: "12px 16px" }}>
-              <span style={{ fontWeight: 600 }}>عدد الليالي</span>
-              <Stepper value={nights} min={1} max={14} onChange={setNights} label="عدد الليالي" />
+              <span style={{ fontWeight: 600 }}>{T("slots.nights")}</span>
+              <Stepper value={nights} min={1} max={14} onChange={setNights} label={t("slots.nights")} />
             </div>
           )}
         </div>
@@ -129,17 +132,17 @@ export default function BookingWidget({ unit, currency, today, maxDate, formStam
 
       <div className="glass flex items-center justify-between gap-3 fixed lg:static inset-x-3 bottom-3 z-30" style={{ padding: "12px 12px 12px 14px", borderRadius: 24, background: "rgba(255,255,255,.86)", boxShadow: "var(--sh-float)" }}>
         <div className="flex flex-col" style={{ minWidth: 0 }}>
-          <span className="muted" style={{ fontSize: 12 }}>{slot ? (isHotel && nights > 1 ? `${nights} ليالٍ · تقديري` : slot.name) : "اختر يومًا وفترة"}</span>
+          <span className="muted" style={{ fontSize: 12 }}>{slot ? (isHotel && nights > 1 ? t("bar.nightsEstimate", { "العدد": nights }) : slot.name) : T("bar.pick")}</span>
           <span className="num" style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 20, color: "var(--forest-deep)" }}>{slot ? money(estimate, currency) : "—"}</span>
         </div>
-        <button type="button" className="btn btn-cta" style={{ minHeight: 54 }} disabled={!slot} onClick={startBooking} data-fx="magnetic ripple">احجز الآن</button>
+        <button type="button" className="btn btn-cta" style={{ minHeight: 54 }} disabled={!slot} onClick={startBooking} data-fx="magnetic ripple">{T("bar.cta")}</button>
       </div>
       <div className="h-20 lg:hidden" aria-hidden />
 
-      <Sheet open={mechOpen} onClose={() => setMechOpen(false)} title="كيف يتم الحجز؟" eyebrow="قبل أن تبدأ" labelledBy="mech-title">
+      <Sheet open={mechOpen} onClose={() => setMechOpen(false)} title={t("mech.title")} eyebrow={t("mech.eyebrow")} labelledBy="mech-title" wide>
         <Mechanism text={mechanism} unit={unit} documents={documents} onContinue={ackMechanism} />
       </Sheet>
-      <Sheet open={formOpen} onClose={() => setFormOpen(false)} title="بيانات الحجز" eyebrow="الخطوة 1 من 3" labelledBy="form-title">
+      <Sheet open={formOpen} onClose={() => setFormOpen(false)} title={t("form.title")} eyebrow={t("form.eyebrow")} labelledBy="form-title">
         {slot && day && (
           <BookingForm unit={unit} slot={slot} day={day} nights={isHotel ? nights : 1} currency={currency} estimate={estimate} formStamp={formStamp}
             onDone={(token) => { saveMyBooking({ token, unit: unit.name, date: day, at: Date.now() }); router.push(`/booking/${token}`); }}
@@ -161,32 +164,27 @@ function Stepper({ value, min, max, onChange, label }: { value: number; min: num
 }
 
 function Mechanism({ text, unit, documents, onContinue }: { text: string; unit: UnitInfo; documents: string; onContinue: () => void }) {
-  const steps = [
-    ["اختر الوقت وأدخل بياناتك", "نحجزه باسمك 30 دقيقة."],
-    ["ادفع عبر شام كاش", "المبلغ كاملًا لحساب الفرع."],
-    ["ارفع الإشعار", "صورة أو PDF مع رقم العملية."],
-    ["نؤكد عبر واتساب", "بعد مراجعة الفرع للدفعة."],
-  ];
+  const { t, T } = useTexts();
   return (
-    <div className="flex flex-col gap-3">
-      <ol className="grid grid-cols-2 gap-2.5" style={{ margin: 0, padding: 0, listStyle: "none" }}>
-        {steps.map(([t, d], i) => (
-          <li key={t} className="flex flex-col gap-1.5" style={{ padding: 14, borderRadius: 18, background: i === 3 ? "var(--forest-deep)" : "#fff", color: i === 3 ? "#F7F3EC" : undefined }}>
-            <span className="num" style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 22, color: i === 3 ? "var(--sand)" : "var(--accent)" }}>0{i + 1}</span>
-            <span style={{ fontWeight: 600, fontSize: 14 }}>{t}</span>
-            <span style={{ fontSize: 13, lineHeight: 1.6, color: i === 3 ? "#C8D1CB" : "var(--stone)" }}>{d}</span>
-          </li>
-        ))}
-      </ol>
+    <div className="flex flex-col gap-3 mech">
+      <BookingStory compact
+        steps={[1, 2, 3, 4].map((n) => ({ title: T(`home.how.s${n}.t` as "home.how.s1.t"), text: T(`home.how.s${n}.d` as "home.how.s1.d") }))}
+        labels={{
+          card: t("home.how.card"), held: t("pay.heldForYou"), name: t("form.name"), phone: t("form.phone"), family: t("form.family"), youth: t("form.youth"),
+          morning: "صباحي · 6 ساعات", evening: "مسائي · 6 ساعات", fullDay: "يوم كامل", shamcash: "Sham Cash", account: t("pay.sc.name"), copy: t("pay.sc.copy"), copied: "تم النسخ",
+          txn: t("pay.txn"), drop: t("pay.drop"), submit: t("pay.submit"), pending: t("st.pending.t"), received: t("st.step1"), proof: t("st.step2"), review: t("st.step3"),
+          confirmed: t("st.confirmed.t"), newBooking: "🔔 حجز جديد", documents: t("st.arrive"), pause: "إيقاف العرض", play: "تشغيل العرض", replay: t("mech.replay"),
+          amount: t("pay.full"), demoName: "سامر الأحمد",
+        }} />
       <div className="flex items-center gap-3 card" style={{ padding: "12px 14px", borderRadius: 18 }}>
         <Icon name="clock" size={22} stroke="var(--teal)" />
-        <span style={{ fontSize: 14 }}>أوقات المراجعة في فرع {unit.branch}: <strong className="num" dir="ltr">{unit.reviewStart} – {unit.reviewEnd}</strong></span>
+        <span style={{ fontSize: 14 }}>{T("mech.reviewHours", { "الفرع": unit.branch })} <strong className="num" dir="ltr">{unit.reviewStart} – {unit.reviewEnd}</strong></span>
       </div>
       <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8 }}>{text}</p>
       <div style={{ padding: "12px 14px", borderRadius: 18, background: "#FBF1E6", border: "1px solid #F0D9C3", fontSize: 14, lineHeight: 1.8 }}>
-        <strong style={{ color: "var(--ember)" }}>ملاحظة: </strong>{documents} الحجز غير قابل للإلغاء أو الاسترداد بعد تثبيته.
+        <strong style={{ color: "var(--ember)" }}>{T("mech.noteLabel")} </strong>{documents} {T("mech.noRefund")}
       </div>
-      <button type="button" className="btn btn-cta btn-block" onClick={onContinue} data-fx="ripple">فهمت، تابع</button>
+      <button type="button" className="btn btn-cta btn-block" onClick={onContinue} data-fx="ripple">{T("mech.continue")}</button>
     </div>
   );
 }
@@ -195,6 +193,7 @@ function BookingForm({ unit, slot, day, nights, currency, estimate, formStamp, o
   unit: UnitInfo; slot: Slot; day: string; nights: number; currency: string; estimate: number; formStamp: string;
   onDone: (token: string) => void; onTaken: () => void;
 }) {
+  const { t, T } = useTexts();
   const [category, setCategory] = useState<"Family" | "Youth">("Family");
   const [persons, setPersons] = useState(Math.min(2, unit.capacity));
   const [busy, setBusy] = useState(false);
@@ -215,9 +214,9 @@ function BookingForm({ unit, slot, day, nights, currency, estimate, formStamp, o
         setErr(p); return;
       }
       const j = await r.json();
-      if (!j.token) { setErr({ message: "تعذّر إتمام الطلب، تواصل معنا عبر واتساب" }); return; }
+      if (!j.token) { setErr({ message: t("form.failed") }); return; }
       onDone(j.token);
-    } catch { setErr({ message: "تعذّر الاتصال. تحقق من الإنترنت وحاول مجددًا" }); }
+    } catch { setErr({ message: t("form.offline") }); }
     finally { setBusy(false); }
   };
   const fe = (field: string) => (err?.field === field ? err.message : null);
@@ -232,39 +231,39 @@ function BookingForm({ unit, slot, day, nights, currency, estimate, formStamp, o
         <span className="num" style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 22, color: "var(--sand)" }}>{money(estimate, currency)}</span>
       </div>
       <div className="field">
-        <label className="label" htmlFor="bf-name">الاسم الكامل</label>
+        <label className="label" htmlFor="bf-name">{T("form.name")}</label>
         <input id="bf-name" name="name" className="input" required minLength={2} maxLength={80} autoComplete="name" aria-invalid={!!fe("name")} />
         {fe("name") && <span className="field-error">{fe("name")}</span>}
       </div>
       <div className="field">
-        <label className="label" htmlFor="bf-phone">رقم الواتساب</label>
+        <label className="label" htmlFor="bf-phone">{T("form.phone")}</label>
         <input id="bf-phone" name="phone" className="input num" required inputMode="tel" dir="ltr" placeholder="09xx xxx xxx" autoComplete="tel" aria-invalid={!!fe("phone")} style={{ textAlign: "right" }} />
-        {fe("phone") ? <span className="field-error">{fe("phone")}</span> : <span className="hint">نرسل لك التأكيد على هذا الرقم</span>}
+        {fe("phone") ? <span className="field-error">{fe("phone")}</span> : <span className="hint">{T("form.phoneHint")}</span>}
       </div>
       <div className="field">
-        <span className="label" id="bf-cat">نوع الحجز</span>
+        <span className="label" id="bf-cat">{T("form.category")}</span>
         <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-labelledby="bf-cat">
           {(unit.familyOnly ? (["Family"] as const) : (["Family", "Youth"] as const)).map((c) => (
             <button key={c} type="button" role="radio" aria-checked={category === c} onClick={() => setCategory(c)} className="slot-card justify-center" style={{ minHeight: 64 }} aria-pressed={category === c}>
-              <span style={{ fontFamily: "var(--f-head)", fontWeight: 600 }}>{c === "Family" ? "عائلي" : "شبابي"}</span>
+              <span style={{ fontFamily: "var(--f-head)", fontWeight: 600 }}>{c === "Family" ? T("form.family") : T("form.youth")}</span>
             </button>
           ))}
         </div>
-        {unit.familyOnly && <span className="hint">هذه الوحدة مخصصة للعائلات فقط</span>}
+        {unit.familyOnly && <span className="hint">{T("form.familyOnly")}</span>}
         {fe("category") && <span className="field-error">{fe("category")}</span>}
       </div>
       <div className="flex items-center justify-between gap-3">
-        <span className="label">عدد الأشخاص <span className="muted" style={{ fontWeight: 400 }}>(حتى {unit.capacity})</span></span>
-        <Stepper value={persons} min={1} max={unit.capacity} onChange={setPersons} label="عدد الأشخاص" />
+        <span className="label">{T("form.persons")} <span className="muted" style={{ fontWeight: 400 }}>{T("form.personsMax", { "العدد": unit.capacity })}</span></span>
+        <Stepper value={persons} min={1} max={unit.capacity} onChange={setPersons} label={t("form.persons")} />
       </div>
       {fe("persons") && <span className="field-error">{fe("persons")}</span>}
       <div className="field">
-        <label className="label" htmlFor="bf-notes">ملاحظات <span className="muted" style={{ fontWeight: 400 }}>(اختياري)</span></label>
+        <label className="label" htmlFor="bf-notes">{T("form.notes")} <span className="muted" style={{ fontWeight: 400 }}>{T("form.optional")}</span></label>
         <textarea id="bf-notes" name="notes" className="textarea" maxLength={500} />
       </div>
       <div className="hp-field" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
       {err && !err.field && <div role="alert" className="field-error" style={{ padding: "10px 14px", borderRadius: 14, background: "#F8DEDB" }}>{err.message}</div>}
-      <button type="submit" className="btn btn-cta btn-block" disabled={busy} data-fx="ripple">{busy ? "جاري الحجز…" : "احجز الوقت 30 دقيقة وتابع للدفع"}</button>
+      <button type="submit" className="btn btn-cta btn-block" disabled={busy} data-fx="ripple">{busy ? T("form.submitting") : T("form.submit")}</button>
     </form>
   );
 }

@@ -110,7 +110,7 @@ export default async function Home() {
       <section id="units" className="wrap flex flex-col gap-8" style={{ paddingTop: 110, scrollMarginTop: 90 }}>
         <div className="flex flex-col gap-2.5" data-fx="reveal"><span className="overline">Selected stays</span><span className="eyebrow">{T("home.units.eyebrow")}</span><h2 className="h-section">{T("home.units.title")}</h2></div>
         {units.length ? (
-          <div className="flex flex-wrap gap-6">{units.map((u) => <UnitCard key={u.id} u={u} currency={meta.currency} />)}</div>
+          <div className="flex flex-wrap gap-6">{units.map((u) => <UnitCard key={u.id} u={u} currency={meta.currency} dict={dict} />)}</div>
         ) : (
           <div className="card empty" data-fx="reveal">
             <span className="empty-ico"><Icon name="home" size={30} stroke="var(--stone)" /></span>

@@ -723,3 +723,35 @@ li.is-on .perm-name { color: var(--forest-deep); }
   .story-step.is-on { border-color: var(--reveal-strong); box-shadow: 0 0 0 3px rgba(181,83,46,.12); }
   .story-card { transform: none; }
 }
+.story.is-compact { height: auto !important; }
+.story.is-compact .story-sticky { position: static; display: block; min-height: 0; }
+.story.is-compact .story-steps { display: none; }
+.story.is-compact .story-card { transform: none; box-shadow: none; padding: 0; max-width: none; background: transparent; }
+.story.is-compact .story-stage { height: 300px; }
+
+/* ───────────── v3 §5.3: text editor ───────────── */
+.txe { display: grid; gap: 20px; align-items: start; }
+@media (min-width: 1000px) { .txe { grid-template-columns: 260px minmax(0, 1fr); } }
+.txe-tree { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 22px; background: #fff; box-shadow: var(--sh-card); }
+.txe-search { display: flex; align-items: center; gap: 8px; padding: 0 12px; min-height: 46px; border-radius: 14px; background: var(--line-soft); color: var(--stone); }
+.txe-search input { flex: 1; border: 0; background: none; font: inherit; min-height: 44px; outline: none; color: var(--ink); }
+.txe-only { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--stone); padding: 0 4px; }
+.txe-tree nav { display: flex; flex-direction: column; gap: 2px; }
+.txe-tree nav button { display: flex; align-items: center; justify-content: space-between; min-height: 42px; padding: 0 12px; border: 0; border-radius: 12px; background: none; font: inherit; font-size: 14px; color: var(--ink); text-align: start; cursor: pointer; transition: background .2s; }
+.txe-tree nav button:hover { background: var(--line-soft); }
+.txe-tree nav button.is-on { background: var(--forest-deep); color: #fff; }
+.txe-badge { min-width: 22px; height: 22px; border-radius: 99px; background: var(--sand); color: var(--night); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.txe-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.txe-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.txe-head h2 { font-size: 20px; margin: 0; }
+.txe-sec { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 22px; background: #fff; box-shadow: var(--sh-card); }
+.txe-sec h3 { font-size: 15px; color: var(--stone); margin: 0 0 4px; font-weight: 600; }
+.txe-field { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; border: 1px solid transparent; transition: border-color .2s, background .2s; }
+.txe-field.is-dirty { border-color: var(--sand); background: #FDF8F1; }
+.txe-field.is-locked { opacity: .6; }
+.txe-field .label { display: inline-flex; align-items: center; gap: 8px; }
+.txe-mod { background: #FBF1E6; color: var(--ember); font-size: 11px; }
+.txe-inh { background: var(--line-soft); color: var(--stone); font-size: 11px; }
+.txe-hist { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: var(--line-soft); font-size: 13px; }
+.txe-hrow { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 10px; background: #fff; }
+.txe-hrow .btn-xs { align-self: flex-start; }
