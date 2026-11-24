@@ -10,21 +10,47 @@ const THEME_AR = { winter: "ثيم الشتاء", summer: "ثيم الصيف", n
 
 export default function AdminShell({ user, title, items, children, theme }: { user: SessionUser; title: string; items: NavItem[]; children: React.ReactNode; theme?: keyof typeof THEME_AR }) {
   const visible = items.filter((i) => !i.perm || user.permissions.has(i.perm));
+  const home = user.role === "SuperAdmin" ? "/admin" : "/branch";
   return (
     <div className="admin" data-admin>
       <aside className="admin-side">
-        <Link href={user.role === "SuperAdmin" ? "/admin" : "/branch"} className="brand" style={{ padding: "0 8px" }}><Logo light sub={title} /></Link>
+        <Link href={home} className="brand" style={{ padding: "0 8px" }}><Logo light sub={title} /></Link>
         <AdminNavLinks items={visible} />
-        <div className="side-foot flex flex-col gap-2 mt-auto" style={{ padding: "0 8px" }}>
+        <div className="side-foot mt-auto">
           {theme && <span className="badge self-start" style={{ background: "rgba(227,185,143,.14)", color: "var(--sand)" }}><Icon name={theme === "winter" ? "snow" : theme === "summer" ? "sun" : "leaf"} size={14} />{THEME_AR[theme]}</span>}
-          <span style={{ fontSize: 13, color: "#8FA197" }}>{user.displayName}</span>
-          <div className="flex gap-2">
-            <Link href="/account/password" className="btn btn-sm" style={{ background: "rgba(247,243,236,.08)", color: "#C8D1CB" }}>كلمة المرور</Link>
-            <form action="/logout" method="post"><button className="btn btn-sm" style={{ background: "rgba(247,243,236,.08)", color: "#C8D1CB" }}><Icon name="logout" size={16} />خروج</button></form>
-          </div>
+          <AccountCard user={user} />
         </div>
       </aside>
+      <header className="admin-topbar">
+        <Link href={home} className="brand"><Logo light /></Link>
+        <details className="account-menu">
+          <summary aria-label="حسابي"><span className="avatar" aria-hidden><Icon name="user" size={20} stroke="var(--night)" width={2} /></span><span className="sr-only">حسابي</span></summary>
+          <div className="account-sheet" role="menu">
+            <AccountCard user={user} />
+          </div>
+        </details>
+      </header>
       <main id="main" className="admin-main">{children}</main>
+    </div>
+  );
+}
+
+const ROLE_AR = { SuperAdmin: "المدير العام", BranchManager: "مدير الفرع", Staff: "موظف" } as const;
+
+/** Name, role, password change and logout. Plain POST forms: work without JavaScript. */
+function AccountCard({ user }: { user: SessionUser }) {
+  return (
+    <div className="account-card">
+      <div className="flex items-center gap-3">
+        <span className="avatar" aria-hidden><Icon name="user" size={20} stroke="var(--night)" width={2} /></span>
+        <div className="flex flex-col min-w-0">
+          <strong className="truncate">{user.displayName}</strong>
+          <span className="role">{ROLE_AR[user.role]}</span>
+        </div>
+      </div>
+      <Link href="/account/password" className="account-link"><Icon name="lock" size={18} />تغيير كلمة المرور</Link>
+      <form action="/logout" method="post"><button className="account-logout" data-testid="logout"><Icon name="logout" size={18} />تسجيل الخروج</button></form>
+      <form action="/logout?all=1" method="post"><button className="account-link account-link-sm">الخروج من كل الأجهزة</button></form>
     </div>
   );
 }

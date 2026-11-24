@@ -32,7 +32,8 @@ export function proxy(req: NextRequest) {
     "font-src 'self'",
     "connect-src 'self'",
     "worker-src 'self' blob:",
-    "frame-src 'none'",
+    "frame-src https://www.google.com https://maps.google.com",
+    "media-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -44,6 +45,8 @@ export function proxy(req: NextRequest) {
   reqHeaders.set("Content-Security-Policy", csp);
   const res = NextResponse.next({ request: { headers: reqHeaders } });
   res.headers.set("Content-Security-Policy", csp);
+  // Panels must never be served from the browser cache (back button after logout).
+  if (/^\/(branch|admin|account)(\/|$)/.test(path)) res.headers.set("Cache-Control", "private, no-store, max-age=0");
 
   // Device fingerprint cookie (128-bit random, 2 years).
   if (!req.cookies.get("sc_did")) {
