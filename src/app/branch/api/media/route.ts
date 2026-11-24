@@ -1,4 +1,5 @@
 import { actionUser } from "@/lib/auth";
+import { isSameOrigin } from "@/lib/origin";
 import { bad, forbidden, problem } from "@/lib/errors";
 import { audit } from "@/lib/audit";
 import { unitInBranch } from "@/lib/services/branch-ops";
@@ -7,8 +8,7 @@ import { appendChunk, discardUpload, finishUpload, receivedBytes, CHUNK_BYTES, t
 export const runtime = "nodejs";
 
 function sameOrigin(req: Request) {
-  const o = req.headers.get("origin");
-  if (o && new URL(o).host !== new URL(req.url).host) throw forbidden();
+  if (!isSameOrigin(req)) throw forbidden();
 }
 
 /** GET ?id=… → bytes already received (resume). */

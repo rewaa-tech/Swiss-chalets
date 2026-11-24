@@ -9,6 +9,8 @@ export class Timeline {
   aborted = false;
   paused = false;
   rate = 1;
+  /** Reduced motion: every step jumps straight to its end state. */
+  instant = false;
 
   constructor(host: HTMLElement) {
     this.clock = document.createElement("i");
@@ -30,6 +32,7 @@ export class Timeline {
     if (this.aborted) throw new Error("abort");
     if (!el) return;
     const a = this.track(el.animate(frames, { duration: 500, easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards", ...opts }));
+    if (this.instant) { a.finish(); return; }
     try { await a.finished; } catch { throw new Error("abort"); }
     if (this.aborted) throw new Error("abort");
   }
@@ -38,15 +41,20 @@ export class Timeline {
   play(el: Element | null | undefined, frames: Keyframe[] | PropertyIndexedKeyframes, opts: KeyframeAnimationOptions = {}) {
     if (!el || this.aborted) return null;
     const a = this.track(el.animate(frames, { duration: 500, easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards", ...opts }));
+    if (this.instant) a.finish();
     a.finished.catch(() => {});
     return a;
   }
 
-  wait(ms: number) { return this.to(this.clock, [{ opacity: 0 }, { opacity: 0 }], { duration: ms, fill: "none", easing: "linear" }); }
+  wait(ms: number) {
+    if (this.instant) return this.aborted ? Promise.reject(new Error("abort")) : Promise.resolve();
+    return this.to(this.clock, [{ opacity: 0 }, { opacity: 0 }], { duration: ms, fill: "none", easing: "linear" });
+  }
 
   /** Typewriter: one character every `speed` ms (default 45). */
   async type(el: HTMLElement | null | undefined, text: string, speed = 45) {
     if (!el) return;
+    if (this.instant) { el.textContent = text; return; }
     el.textContent = "";
     for (const ch of Array.from(text)) { el.textContent += ch; await this.wait(speed); }
   }

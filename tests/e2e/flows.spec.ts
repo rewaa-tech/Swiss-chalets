@@ -67,9 +67,11 @@ test.describe.serial("Swiss Chalets end-to-end", () => {
     const unitId = Number(page.url().match(/units\/(\d+)/)![1]);
     unitSlug = "test-chalet";
 
-    await page.setInputFiles('input[name="files"]', `${FIX}/chalet.jpg`);
-    await page.getByRole("button", { name: "رفع الصور" }).click();
-    await toast(page, "تم رفع 1 صورة");
+    // v3: separate cover + album (chunked upload)
+    await page.locator('input[type="file"]:not([multiple])').setInputFiles(`${FIX}/chalet.jpg`);
+    await toast(page, "تم تغيير صورة الغلاف");
+    await page.locator('input[type="file"][multiple]').setInputFiles(`${FIX}/chalet.jpg`);
+    await expect(page.locator(".album-item")).toHaveCount(1);
     await expect(page.locator('img[src*="/media/units/"]').first()).toBeVisible();
 
     await page.goto("/branch/seasons");
@@ -225,9 +227,13 @@ test.describe.serial("Swiss Chalets end-to-end", () => {
   test("E2E-07: staff with limited permissions", async ({ page, browser }) => {
     await login(page, MANAGER.user, MANAGER.pass);
     await page.goto("/branch/staff");
-    await page.fill("#st-d", "موظف الاستقبال");
-    await page.fill("#st-u", "front.desk");
-    await page.fill("#st-p", "TempPass12345");
+    // v3 §6: three-step wizard; the default grant is "bookings.view" only
+    await page.fill("#ac-d", "موظف الاستقبال");
+    await page.fill("#ac-u", "front.desk");
+    await page.fill("#ac-p", "TempPass12345");
+    await page.getByRole("button", { name: "التالي" }).click();
+    await expect(page.locator("form").filter({ has: page.locator("#ac-d") }).locator('[data-perm="bookings.view"]')).toBeChecked();
+    await page.getByRole("button", { name: "التالي" }).click();
     await page.getByRole("button", { name: "إضافة الموظف" }).click();
     await toast(page, /تمت إضافة الموظف/);
 
@@ -334,13 +340,13 @@ test.describe.serial("Swiss Chalets end-to-end", () => {
     await login(page, MANAGER.user, MANAGER.pass);
     const unitId = (await sql("SELECT id FROM units WHERE slug = 'test-chalet'"))[0].id;
     const bookingId = (await sql("SELECT id FROM bookings ORDER BY id LIMIT 1"))[0].id;
-    const branchPages = ["/branch/queue", "/branch/bookings", `/branch/bookings/${bookingId}`, "/branch/bookings/new", "/branch/calendar", "/branch/units", `/branch/units/${unitId}`, "/branch/units/new", "/branch/seasons", "/branch/slots", "/branch/staff", "/branch/blocklist", "/branch/settings", "/account/password"];
+    const branchPages = ["/branch/queue", "/branch/bookings", `/branch/bookings/${bookingId}`, "/branch/bookings/new", "/branch/calendar", "/branch/units", `/branch/units/${unitId}`, "/branch/units/new", "/branch/seasons", "/branch/slots", "/branch/staff", "/branch/blocklist", "/branch/content", "/branch/settings", "/account/password"];
     for (const p of branchPages) { const r = await page.goto(p); expect(r?.status(), p).toBe(200); }
     const actx = await browser.newContext();
     const ap = await actx.newPage();
     watch(ap);
     await login(ap, ADMIN.user, ADMIN.pass);
-    const adminPages = ["/admin/bookings", `/admin/bookings/${bookingId}`, "/admin/branches", "/admin/users", "/admin/contacts", "/admin/settings", "/admin/templates", "/admin/audit"];
+    const adminPages = ["/admin/bookings", `/admin/bookings/${bookingId}`, "/admin/branches", "/admin/users", "/admin/contacts", "/admin/settings", "/admin/content", "/admin/templates", "/admin/audit"];
     const links = new Set<string>();
     for (const p of adminPages) {
       const r = await ap.goto(p); expect(r?.status(), p).toBe(200);

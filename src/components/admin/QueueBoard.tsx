@@ -25,7 +25,7 @@ function Deadline({ due, now, big = false }: { due: string | null; now: number; 
   const h = Math.floor(a / 3600000), m = Math.floor((a % 3600000) / 60000), s = Math.floor((a % 60000) / 1000);
   const txt = h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}` : `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   return (
-    <span className="badge num" dir="ltr" style={{ background: late ? "#F8DEDB" : d < 10 * 60000 ? "#F6E7D3" : "#E3EAE6", color: late ? "#8f1e18" : d < 10 * 60000 ? "#8A4A26" : "var(--forest)", fontSize: big ? 15 : 12 }}>
+    <span suppressHydrationWarning className="badge num" dir="ltr" style={{ background: late ? "#F8DEDB" : d < 10 * 60000 ? "#F6E7D3" : "#E3EAE6", color: late ? "#8f1e18" : d < 10 * 60000 ? "#8A4A26" : "var(--forest)", fontSize: big ? 15 : 12 }}>
       {late ? `+${txt}` : txt}
     </span>
   );

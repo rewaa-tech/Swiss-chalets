@@ -1,11 +1,11 @@
 import { currentUser } from "@/lib/auth";
+import { isSameOrigin } from "@/lib/origin";
 import { bad, forbidden, problem } from "@/lib/errors";
 import { saveText, scopeFor, textHistory } from "@/lib/texts/server";
 import { isTextKey } from "@/lib/texts/registry";
 
 async function editor(req: Request) {
-  const o = req.headers.get("origin");
-  if (o && new URL(o).host !== new URL(req.url).host) throw forbidden();
+  if (!isSameOrigin(req)) throw forbidden();
   const u = await currentUser();
   if (!u || u.mustChangePassword) throw forbidden("سجّل الدخول أولًا");
   return u;

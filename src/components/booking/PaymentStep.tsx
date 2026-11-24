@@ -89,13 +89,13 @@ export default function PaymentStep(p: Props) {
       <header className="flex items-center justify-between gap-3">
         <div className="flex flex-col"><h1 style={{ fontSize: 20 }}>{T("pay.title")}</h1><span className="muted" style={{ fontSize: 12 }}>{T("pay.step")}</span></div>
         {!p.expired && (
-          <div className="card flex items-center gap-2.5" data-fx="countdown" style={{ padding: "6px 14px 6px 6px", borderRadius: 999 }} role="timer" aria-label={`الوقت المتبقي ${mm}:${ss}`}>
+          <div className="card flex items-center gap-2.5" data-fx="countdown" style={{ padding: "6px 14px 6px 6px", borderRadius: 999 }} role="timer" aria-label={`الوقت المتبقي ${mm}:${ss}`} suppressHydrationWarning>
             <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden>
               <circle cx="26" cy="26" r={R} fill="none" stroke="var(--line)" strokeWidth="4" />
-              <circle cx="26" cy="26" r={R} fill="none" stroke={warn ? "var(--warning)" : "var(--ember)"} strokeWidth="4" strokeLinecap="round"
+              <circle suppressHydrationWarning cx="26" cy="26" r={R} fill="none" stroke={warn ? "var(--warning)" : "var(--ember)"} strokeWidth="4" strokeLinecap="round"
                 strokeDasharray={C} strokeDashoffset={C * (1 - frac)} transform="rotate(-90 26 26)" style={{ transition: "stroke-dashoffset 1s linear, stroke .3s" }} />
             </svg>
-            <div className="flex flex-col"><span className="muted" style={{ fontSize: 11 }}>{T("pay.heldForYou")}</span><span className="num" dir="ltr" style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 17, color: warn ? "var(--warning)" : "var(--forest-deep)" }}>{mm}:{ss}</span></div>
+            <div className="flex flex-col"><span className="muted" style={{ fontSize: 11 }}>{T("pay.heldForYou")}</span><span suppressHydrationWarning className="num" dir="ltr" style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 17, color: warn ? "var(--warning)" : "var(--forest-deep)" }}>{mm}:{ss}</span></div>
           </div>
         )}
       </header>

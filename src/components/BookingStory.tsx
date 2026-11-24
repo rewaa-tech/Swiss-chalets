@@ -43,6 +43,7 @@ export default function BookingStory({ steps, labels: L, compact = false }: { st
   const ticker = useCallback((t: Timeline, from: number, every: number, until: () => boolean) => {
     let s = from;
     setClock(s);
+    if (t.instant) return; // reduced motion: show the time, don't tick
     (async () => { try { while (!until() && s > 0) { await t.wait(every); s--; setClock(s); } } catch { /* cancelled */ } })();
   }, []);
 
@@ -185,7 +186,7 @@ export default function BookingStory({ steps, labels: L, compact = false }: { st
     const t = new Timeline(stage.current!);
     tl.current = t;
     const rm = reduced();
-    if (rm) t.setRate(1e4);
+    if (rm) t.instant = true;
     if (userPaused.current || !inView.current) t.pause();
     const enter = sceneEls?.[i];
     t.play(enter, [{ clipPath: "inset(0 0 100% 0)", opacity: 0, transform: "translateY(-12px)" }, { clipPath: "inset(0 0 0% 0)", opacity: 1, transform: "none" }], { duration: rm ? 1 : 520 });
@@ -226,6 +227,13 @@ export default function BookingStory({ steps, labels: L, compact = false }: { st
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => { io.disconnect(); document.removeEventListener("visibilitychange", vis); window.removeEventListener("scroll", onScroll); tl.current?.cancel(); if (auto.current) clearTimeout(auto.current); };
   }, [run, desktop]);
+
+  // Mobile: keep the active step card centred in the horizontal strip (without moving the page).
+  useEffect(() => {
+    if (desktopMq() || compact) return;
+    const ol = root.current?.querySelector<HTMLElement>(".story-steps ol"), li = ol?.children[step] as HTMLElement | undefined;
+    if (ol && li) ol.scrollTo({ left: li.offsetLeft - (ol.clientWidth - li.clientWidth) / 2, behavior: reduced() ? "auto" : "smooth" });
+  }, [step, compact]);
 
   const jump = (i: number) => {
     if (desktop() && !reduced()) {

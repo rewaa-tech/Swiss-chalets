@@ -14,7 +14,7 @@ export default async function AdminContent() {
     one<{ slug: string }>("SELECT u.slug FROM units u JOIN branches b ON b.id = u.branch_id WHERE u.is_active AND b.status = 'Active' ORDER BY u.sort_order, u.id LIMIT 1"),
   ]);
   const unitUrl = unit ? `/u/${encodeURIComponent(unit.slug)}` : "/";
-  const previews: Record<string, string> = { common: "/", home: "/", my: "/my", terms: "/terms", notfound: "/404-preview", ...(b ? { branch: `/b/${b.slug}`, map: `/b/${b.slug}#location` } : {}), unit: unitUrl, calendar: unitUrl, mechanism: unitUrl, form: unitUrl };
+  const previews: Record<string, string> = { common: "/", home: "/", my: "/my", terms: "/terms", ...(b ? { branch: `/b/${b.slug}`, map: `/b/${b.slug}#location` } : {}), unit: unitUrl, calendar: unitUrl, mechanism: unitUrl, form: unitUrl };
   return (
     <>
       <PageHead title="نصوص الواجهة" sub="النص العام لكل الموقع. كل فرع بيقدر يعدّل نصوص صفحاته، وإذا ما عدّلها بيظهر هالنص." />

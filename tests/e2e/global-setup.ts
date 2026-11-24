@@ -34,6 +34,9 @@ export async function makeFixtures() {
   mkdirSync(FIX, { recursive: true });
   writeFileSync(`${FIX}/proof.png`, await sharp({ create: { width: 600, height: 900, channels: 3, background: { r: 240, g: 240, b: 235 } } }).png().toBuffer());
   writeFileSync(`${FIX}/chalet.jpg`, await sharp("design/photos/chalet-pool-dusk.jpg").toBuffer());
+  // v3: a 3-second test clip for the album (needs ffmpeg, like production).
+  const { execFileSync } = await import("node:child_process");
+  execFileSync("ffmpeg", ["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=640x360:rate=25:duration=3", "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p", `${FIX}/clip.mp4`]);
   const d = await PDFDocument.create();
   d.addPage([300, 400]).drawText("Sham Cash receipt", { x: 30, y: 300, size: 14 });
   d.addPage([300, 400]);

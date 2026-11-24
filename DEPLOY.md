@@ -10,6 +10,8 @@ sudo install -d /usr/share/postgresql-common/pgdg
 sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
 echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 sudo apt update && sudo apt install -y postgresql-17 postgresql-contrib-17 nginx certbot python3-certbot-nginx git
+# v3: تحويل فيديوهات الألبوم (مجاني ومفتوح المصدر)
+sudo apt install -y ffmpeg
 # جدار الحماية
 sudo ufw allow 22 && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable
 ```
@@ -17,7 +19,7 @@ sudo ufw allow 22 && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable
 ## 2. المستخدم والمجلدات
 ```bash
 sudo adduser --system --group --home /opt/swisschalets swisschalets
-sudo mkdir -p /var/swisschalets/{media,proofs,keys,backups,logs}
+sudo mkdir -p /var/swisschalets/{media,proofs,keys,backups,logs,tmp}
 sudo chown -R swisschalets:swisschalets /var/swisschalets && sudo chmod 750 /var/swisschalets /var/swisschalets/{proofs,keys,backups}
 ```
 
@@ -78,3 +80,10 @@ sudo -u swisschalets crontab -e
 
 ## 9. التحديثات
 `sudo -u swisschalets bash /opt/swisschalets/app/deploy/deploy.sh` — يسحب الكود، يبني، ينفّذ الـ Migrations، يعيد التشغيل، ويفحص `/health`.
+
+## 10. ملاحظات الإصدار 3
+- **ffmpeg مطلوب** لفيديوهات الألبوم. بدونه رفع الصور يشتغل عادي، والفيديو بيرجع رسالة واضحة.
+- رفع الوسائط بأجزاء 4MB، فإعداد Nginx الحالي `client_max_body_size 6m` كافي بدون تغيير.
+- المجلد `/var/swisschalets/tmp/uploads` بيحفظ الأجزاء مؤقتًا، وبيتنظف تلقائيًا بعد انتهاء كل رفع.
+- الخريطة بتستعمل Google Maps Embed بدون مفتاح، وهي مسموحة بالـ CSP (`frame-src https://www.google.com`).
+- بعد التحديث: `npm run db:migrate` بيطبّق الـ Migrations من 002 لـ 005 (الوسائط، الصلاحيات، الموقع، النصوص).
