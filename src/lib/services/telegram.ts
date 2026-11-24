@@ -52,7 +52,7 @@ export async function notifyBooking(bookingId: number, kind: AlertKind) {
       ? `SELECT id, telegram_chat_id FROM app_users WHERE is_active AND telegram_chat_id IS NOT NULL
            AND ((role = 'BranchManager' AND branch_id = $1) OR role = 'SuperAdmin')`
       : `SELECT u.id, u.telegram_chat_id FROM app_users u WHERE u.is_active AND u.telegram_chat_id IS NOT NULL AND u.branch_id = $1
-           AND (u.role = 'BranchManager' OR EXISTS (SELECT 1 FROM user_permissions p WHERE p.user_id = u.id AND p.permission = 'bookings.review'))`,
+           AND (u.role = 'BranchManager' OR EXISTS (SELECT 1 FROM user_permissions p WHERE p.user_id = u.id AND p.permission = 'bookings.confirm'))`,
     [b.branch_id]);
   const text = await bookingAlertText(bookingId, kind);
   for (const r of recipients) {

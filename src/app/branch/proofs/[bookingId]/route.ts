@@ -7,7 +7,7 @@ import { proofsDir } from "@/lib/paths";
 /** Proofs are only served here, after checking bookings.view and the branch. */
 export async function GET(_: Request, ctx: { params: Promise<{ bookingId: string }> }) {
   let u;
-  try { u = await actionUser("branch", "bookings.view"); } catch (e) { return new Response("Forbidden", { status: (e as { status?: number }).status ?? 403 }); }
+  try { u = await actionUser("branch", "bookings.view_proof"); } catch (e) { return new Response("Forbidden", { status: (e as { status?: number }).status ?? 403 }); }
   const id = Number((await ctx.params).bookingId);
   const p = Number.isInteger(id) ? await one(
     "SELECT p.file_path, p.proof_kind FROM payment_proofs p JOIN bookings b ON b.id = p.booking_id WHERE p.booking_id = $1 AND b.branch_id = $2 AND p.file_deleted_at IS NULL", [id, u.branchId]) : null;

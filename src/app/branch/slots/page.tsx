@@ -16,7 +16,7 @@ const KIND: Record<string, string> = { Hours6: "6 ساعات", Hours10: "10 سا
 
 export default async function SlotsPage({ searchParams }: { searchParams: Promise<{ unit?: string; season?: string }> }) {
   const u = await requireUser("branch");
-  requirePerm(u, "slots.manage");
+  requirePerm(u, "slots.view");
   const sp = await searchParams;
   const [units, seasons] = await Promise.all([branchUnits(u.branchId!), q("SELECT * FROM seasons WHERE branch_id = $1 ORDER BY start_date", [u.branchId])]);
   if (!units.length || !seasons.length) return (<><PageHead title="الفترات والأسعار" /><div className="admin-card"><Empty icon="tag" title={!units.length ? "أضف وحدة أولًا" : "حدد المواسم أولًا"} text="الفترات تُعرّف لكل وحدة ولكل موسم." /></div></>);

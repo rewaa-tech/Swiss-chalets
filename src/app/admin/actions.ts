@@ -10,6 +10,7 @@ import { setSetting, invalidateSettings } from "@/lib/settings";
 import { randomHex } from "@/lib/crypto";
 import { saveResponsiveImage, deleteResponsiveImage } from "@/lib/services/media";
 import { invalidateAll } from "@/lib/services/cache";
+import { createAccount, setAccountPermissions, setAccountActive } from "@/lib/services/accounts";
 
 type S = ActionState | null;
 
@@ -51,32 +52,30 @@ export async function branchAction(_: S, fd: FormData) {
 export async function managerAction(_: S, fd: FormData) {
   return run(async () => {
     const u = await actionUser("admin");
-    const username = str(fd, "username"), display = str(fd, "display_name"), pass = String(fd.get("password") ?? "");
     const branchId = int(fd, "branch_id");
-    if (!/^[A-Za-z0-9._-]{3,32}$/.test(username)) throw bad("اسم المستخدم: 3–32 حرفًا لاتينيًا أو أرقام", "username");
-    if (display.length < 2) throw bad("الاسم مطلوب", "display_name");
-    if (!(await one("SELECT 1 FROM branches WHERE id = $1", [branchId]))) throw bad("اختر الفرع", "branch_id");
-    const pv = validatePassword(pass); if (pv) throw bad(pv, "password");
-    try {
-      const r = await one("INSERT INTO app_users (username, display_name, password_hash, role, branch_id, security_stamp, must_change_password, created_by) VALUES ($1,$2,$3,'BranchManager',$4,$5,true,$6) RETURNING id",
-        [username, display, await hashPassword(pass), branchId, randomHex(16), u.id]);
-      await audit({ userId: u.id, branchId, action: "CreateManager", entity: "user", entityId: r.id, details: { username } });
-    } catch (e) { if (pgCode(e) === "23505") throw bad("اسم المستخدم مستخدم مسبقًا", "username"); throw e; }
+    const id = await createAccount(u, {
+      role: "BranchManager", branchId, username: str(fd, "username"), displayName: str(fd, "display_name"),
+      password: String(fd.get("password") ?? ""), perms: fd.getAll("perms").map(String), customManagerPerms: str(fd, "perm_mode") === "custom",
+    });
     revalidatePath("/admin/users");
-    return "تمت إضافة المدير. سيُطلب منه تغيير كلمة المرور بأول دخول";
+    return { message: "تمت إضافة المدير. سيُطلب منه تغيير كلمة المرور بأول دخول", data: { id } };
+  });
+}
+
+export async function managerPermsAction(_: S, fd: FormData) {
+  return run(async () => {
+    const u = await actionUser("admin");
+    await setAccountPermissions(u, int(fd, "id"), fd.getAll("perms").map(String), str(fd, "perm_mode") === "custom");
+    revalidatePath("/admin/users");
+    return "تم حفظ الصلاحيات، وصارت نافذة فورًا";
   });
 }
 
 export async function userActiveAction(_: S, fd: FormData) {
   return run(async () => {
     const u = await actionUser("admin");
-    const id = int(fd, "id"), active = str(fd, "active") === "1";
-    if (id === u.id) throw bad("لا يمكنك تعطيل حسابك");
-    const t = await one("SELECT id, branch_id FROM app_users WHERE id = $1", [id]);
-    if (!t) throw notFound();
-    await q("UPDATE app_users SET is_active = $2 WHERE id = $1", [id, active]);
-    if (!active) await rotateStamp(id);
-    await audit({ userId: u.id, branchId: t.branch_id, action: active ? "EnableUser" : "DisableUser", entity: "user", entityId: id });
+    const active = str(fd, "active") === "1";
+    await setAccountActive(u, int(fd, "id"), active);
     revalidatePath("/admin/users");
     return active ? "تم تفعيل الحساب" : "تم تعطيل الحساب وإنهاء جلساته";
   });

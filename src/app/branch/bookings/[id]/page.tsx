@@ -42,7 +42,7 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
     <>
       <PageHead title={`الحجز #${b.id}`} sub={`${b.unit_name} · ${STATUS_AR[status]}`}>
         <Link href="/branch/bookings" className="btn btn-outline btn-sm">رجوع</Link>
-        {status === "PendingReview" && u.permissions.has("bookings.review") && <Link href={`/branch/queue?id=${b.id}`} className="btn btn-dark btn-sm">مراجعة الطلب</Link>}
+        {status === "PendingReview" && (u.permissions.has("bookings.confirm") || u.permissions.has("bookings.reject")) && <Link href={`/branch/queue?id=${b.id}`} className="btn btn-dark btn-sm">مراجعة الطلب</Link>}
       </PageHead>
       <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
         <div className="flex flex-col gap-5 min-w-0">
@@ -71,7 +71,7 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
         <div className="flex flex-col gap-4">
           <div className="admin-card"><h2 style={{ fontSize: 17, marginBottom: 10 }}>إشعار الدفع</h2><ProofPreview bookingId={b.id} kind={b.proof_kind} deleted={!!b.file_deleted_at} /></div>
           {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-wa"><Icon name="wa" size={20} />رسالة واتساب للزبون</a>}
-          {status === "Confirmed" && started && u.permissions.has("bookings.review") && (
+          {status === "Confirmed" && started && u.permissions.has("bookings.void") && (
             <ActionForm action={voidAction} className="admin-card flex flex-col gap-2">
               <input type="hidden" name="id" value={b.id} />
               <p className="muted" style={{ margin: 0, fontSize: 14 }}>إذا لم يُحضر الزبون الثبوتيات المطلوبة عند الوصول:</p>

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewManual() {
   const u = await requireUser("branch");
-  requirePerm(u, "bookings.review");
+  requirePerm(u, "bookings.manual");
   const units = await branchUnits(u.branchId!, true);
   return (
     <>

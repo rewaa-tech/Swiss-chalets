@@ -15,12 +15,13 @@ export default async function BranchLayout({ children }: { children: React.React
   const items: NavItem[] = [
     { href: "/branch/queue", label: "يحتاج مراجعتك", icon: "inbox", perm: "bookings.view", count },
     { href: "/branch/bookings", label: "الحجوزات", icon: "list", perm: "bookings.view" },
-    { href: "/branch/calendar", label: "التقويم التشغيلي", icon: "calendar", perm: "calendar.manage" },
-    { href: "/branch/units", label: "الوحدات", icon: "home", perm: "units.manage" },
-    { href: "/branch/seasons", label: "المواسم والأنماط", icon: "leaf", perm: "pricing.manage" },
-    { href: "/branch/slots", label: "الفترات والأسعار", icon: "tag", perm: "slots.manage" },
-    { href: "/branch/staff", label: "الموظفون", icon: "users", perm: "staff.manage" },
-    { href: "/branch/blocklist", label: "الحظر", icon: "ban", perm: "blocklist.manage" },
+    { href: "/branch/calendar", label: "التقويم التشغيلي", icon: "calendar", perm: "calendar.view" },
+    { href: "/branch/units", label: "الوحدات", icon: "home", perm: "units.view" },
+    { href: "/branch/seasons", label: "المواسم والأنماط", icon: "leaf", perm: "seasons.manage" },
+    { href: "/branch/slots", label: "الفترات والأسعار", icon: "tag", perm: "slots.view" },
+    { href: "/branch/staff", label: "الموظفون", icon: "users", perm: "staff.view" },
+    { href: "/branch/blocklist", label: "الحظر", icon: "ban", perm: "blocklist.view" },
+    { href: "/branch/content", label: "نصوص الواجهة", icon: "edit", perm: "content.manage" },
     { href: "/branch/settings", label: "إعدادات الفرع", icon: "settings", perm: "branch.settings" },
   ];
   return <AdminShell user={user} title={`لوحة فرع ${branch?.name ?? ""}`} items={items} theme={theme}>{children}</AdminShell>;

@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function UnitEdit({ params }: { params: Promise<{ id: string }> }) {
   const u = await requireUser("branch");
-  requirePerm(u, "units.manage");
+  requirePerm(u, "units.view");
   const raw = (await params).id;
   const isNew = raw === "new";
   const unit = isNew ? null : await one("SELECT * FROM units WHERE id = $1 AND branch_id = $2", [Number(raw) || 0, u.branchId]);

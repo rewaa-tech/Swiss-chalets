@@ -37,7 +37,7 @@ export async function destroySession() {
 export async function userFromToken(token: string | undefined): Promise<SessionUser | null> {
   if (!token) return null;
   const u = await one(
-    `SELECT u.id, u.username, u.display_name, u.role, u.branch_id, u.must_change_password,
+    `SELECT u.id, u.username, u.display_name, u.role, u.branch_id, u.must_change_password, u.perms_custom,
             COALESCE(array_agg(p.permission) FILTER (WHERE p.permission IS NOT NULL), '{}') AS perms
        FROM user_sessions s JOIN app_users u ON u.id = s.user_id
        LEFT JOIN user_permissions p ON p.user_id = u.id
@@ -47,7 +47,7 @@ export async function userFromToken(token: string | undefined): Promise<SessionU
   if (!u) return null;
   return {
     id: u.id, username: u.username, displayName: u.display_name, role: u.role as Role, branchId: u.branch_id,
-    permissions: effectivePermissions(u.role, u.perms), mustChangePassword: u.must_change_password,
+    permissions: effectivePermissions(u.role, u.perms, u.perms_custom), mustChangePassword: u.must_change_password,
   };
 }
 

@@ -18,9 +18,9 @@ export default async function QueuePage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHead title="يحتاج مراجعتك" sub="مرتبة حسب مهلة المراجعة · تتحدث تلقائيًا">
-        {u.permissions.has("bookings.review") && <Link href="/branch/bookings/new" className="btn btn-cta btn-sm" style={{ minHeight: 46 }}><Icon name="plus" size={18} />حجز يدوي</Link>}
+        {u.permissions.has("bookings.manual") && <Link href="/branch/bookings/new" className="btn btn-cta btn-sm" style={{ minHeight: 46 }}><Icon name="plus" size={18} />حجز يدوي</Link>}
       </PageHead>
-      <QueueBoard initial={items} initialId={id} canReview={u.permissions.has("bookings.review")} canBlock={u.permissions.has("blocklist.manage")} reviewAction={reviewAction} />
+      <QueueBoard initial={items} initialId={id} canReview={u.permissions.has("bookings.confirm") || u.permissions.has("bookings.reject")} canConfirm={u.permissions.has("bookings.confirm")} canReject={u.permissions.has("bookings.reject")} canBlock={u.permissions.has("bookings.block")} canProof={u.permissions.has("bookings.view_proof")} reviewAction={reviewAction} />
     </>
   );
 }

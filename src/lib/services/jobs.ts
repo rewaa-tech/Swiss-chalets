@@ -8,6 +8,7 @@ import { completeFinished } from "./booking";
 import { isWithinWindow } from "./review-deadline";
 import { notifyBooking } from "./telegram";
 import { removeProofFile } from "./proof";
+import { failStaleVideos } from "./uploads";
 
 const REMINDER_MS = 10 * 60000;
 
@@ -62,6 +63,7 @@ export function startJobs() {
     if (hour !== lastHour) { lastHour = hour; await safe("completion", () => completeFinished())(); }
     if (hour === 3 && lastCleanupDay !== l.date) { lastCleanupDay = l.date; await safe("proof-cleanup", proofCleanup)(); }
   };
+  void safe("stale-videos", failStaleVideos)();
   setTimeout(tick, 5000);
   setInterval(tick, 60_000).unref?.();
 }

@@ -4,8 +4,8 @@ import { createPortal } from "react-dom";
 import Icon from "./Icon";
 
 /** data-fx="sheet": spring bottom-sheet on mobile, zoom dialog on desktop; focus trap + Esc. */
-export default function Sheet({ open, onClose, title, eyebrow, children, labelledBy = "sheet-title" }: {
-  open: boolean; onClose: () => void; title: string; eyebrow?: string; children: React.ReactNode; labelledBy?: string;
+export default function Sheet({ open, onClose, title, eyebrow, children, labelledBy = "sheet-title", wide = false }: {
+  open: boolean; onClose: () => void; title: string; eyebrow?: string; children: React.ReactNode; labelledBy?: string; wide?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function Sheet({ open, onClose, title, eyebrow, children, labelle
   if (!open || typeof document === "undefined") return null;
   return createPortal(
     <div className="sheet-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={ref} className="sheet" role="dialog" aria-modal="true" aria-labelledby={labelledBy} data-fx="sheet">
+      <div ref={ref} className={`sheet${wide ? " sheet-wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby={labelledBy} data-fx="sheet">
         <span className="grabber md:hidden" aria-hidden />
         <div className="flex items-start justify-between gap-3" style={{ marginBottom: 14 }}>
           <div className="flex flex-col gap-1">

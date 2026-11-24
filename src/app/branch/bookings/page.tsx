@@ -23,7 +23,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHead title="الحجوزات" sub={`${res.total} حجز`}>
-        {u.permissions.has("bookings.review") && <Link href="/branch/bookings/new" className="btn btn-cta btn-sm" style={{ minHeight: 46 }}><Icon name="plus" size={18} />حجز يدوي</Link>}
+        {u.permissions.has("bookings.manual") && <Link href="/branch/bookings/new" className="btn btn-cta btn-sm" style={{ minHeight: 46 }}><Icon name="plus" size={18} />حجز يدوي</Link>}
       </PageHead>
       <div className="admin-card">
         <nav className="tabs" style={{ marginBottom: 16 }} aria-label="حالات الحجز">

@@ -30,7 +30,7 @@ async function affected(sql: string, params: unknown[], db?: Db) {
 
 /** Open/close days (BR-13: a day with an active booking cannot be closed). */
 export async function setDays(user: SessionUser, unitIds: number[], days: string[], open: boolean) {
-  assertPerm(user, "calendar.manage");
+  assertPerm(user, "calendar.open_close");
   if (!days.length || !unitIds.length) throw bad("اختر وحدة ويومًا واحدًا على الأقل");
   if (days.length > 400) throw bad("عدد الأيام كبير جدًا");
   for (const d of days) if (!isValidDate(d)) throw bad("تاريخ غير صحيح");
@@ -58,7 +58,7 @@ export interface SeasonInput { kind: "Summer" | "Winter" | "Spring" | "Autumn"; 
 
 /** BR-01 — save the four seasons of a branch. Overlap is rejected by the DB constraint (T-11). */
 export async function saveSeasons(user: SessionUser, seasons: SeasonInput[]) {
-  assertPerm(user, "pricing.manage");
+  assertPerm(user, "seasons.manage");
   for (const s of seasons) {
     if (!["Summer", "Winter", "Spring", "Autumn"].includes(s.kind)) throw bad("نوع موسم غير صحيح");
     if (!isValidDate(s.start) || !isValidDate(s.end)) throw bad("أدخل تاريخي البداية والنهاية لكل موسم", `season_${s.kind}`);
@@ -93,7 +93,7 @@ export async function saveSeasons(user: SessionUser, seasons: SeasonInput[]) {
 
 /** BR-02/03/13 — set the mode of a unit in a season. */
 export async function setUnitMode(user: SessionUser, unitId: number, seasonId: number, mode: Mode | null) {
-  assertPerm(user, "pricing.manage");
+  assertPerm(user, "seasons.manage");
   await tx(async (c) => {
     await unitInBranch(user, unitId, c);
     const s = await one("SELECT id, kind FROM seasons WHERE id = $1 AND branch_id = $2", [seasonId, user.branchId], c);

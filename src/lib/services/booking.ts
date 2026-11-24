@@ -267,7 +267,7 @@ export type ReviewDecision = "Confirm" | "Reject" | "RejectAndBlock";
 
 /** BR-25/26 — confirm / reject / reject-and-block. */
 export async function reviewBooking(user: SessionUser, id: number, decision: ReviewDecision, reason?: string | null) {
-  assertPerm(user, "bookings.review");
+  assertPerm(user, decision === "Confirm" ? "bookings.confirm" : decision === "Reject" ? "bookings.reject" : "bookings.block");
   const r = (reason ?? "").trim();
   if (decision !== "Confirm" && r.length < 3) throw bad("اكتب سبب الرفض", "reason");
   const result = await tx(async (c) => {
@@ -279,7 +279,6 @@ export async function reviewBooking(user: SessionUser, id: number, decision: Rev
       await c.query("UPDATE bookings SET status = 'Rejected', reviewed_by = $2, reviewed_at = now(), reject_reason = $3 WHERE id = $1", [id, user.id, r]);
       await c.query("UPDATE booking_items SET is_active = false WHERE booking_id = $1", [id]);
       if (decision === "RejectAndBlock") {
-        assertPerm(user, "blocklist.manage");
         const ids: [string, string | null][] = [["Phone", b.phone_e164], ["Ip", b.ip_hash], ["Device", b.device_hash]];
         for (const [kind, value] of ids) {
           if (!value) continue;
@@ -299,7 +298,7 @@ export async function reviewBooking(user: SessionUser, id: number, decision: Rev
 
 /** BR-29 — void a confirmed booking whose guests did not bring documents. */
 export async function voidNoDocuments(user: SessionUser, id: number, now = new Date()) {
-  assertPerm(user, "bookings.review");
+  assertPerm(user, "bookings.void");
   const b = await tx(async (c) => {
     const b = await branchBooking(user, id, c, true);
     if (b.status !== "Confirmed") throw conflict("يمكن الإلغاء لعدم الثبوتيات فقط للحجوزات المثبتة", "state");
@@ -317,7 +316,7 @@ export interface ManualInput extends SelectionInput, CustomerInput { transaction
 
 /** BR-34 — manual booking from the panel, Confirmed immediately. */
 export async function createManual(user: SessionUser, inp: ManualInput, now = new Date()) {
-  assertPerm(user, "bookings.review");
+  assertPerm(user, "bookings.manual");
   if (!user.branchId) throw forbidden();
   const unit = await one("SELECT id, branch_id FROM units WHERE id = $1 AND branch_id = $2", [inp.unitId, user.branchId]);
   if (!unit) throw notFound("الوحدة غير موجودة");

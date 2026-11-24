@@ -31,7 +31,7 @@ function Deadline({ due, now, big = false }: { due: string | null; now: number; 
   );
 }
 
-export default function QueueBoard({ initial, canReview, canBlock, reviewAction, initialId }: { initial: QItem[]; canReview: boolean; canBlock: boolean; reviewAction: Act; initialId?: number }) {
+export default function QueueBoard({ initial, canReview, canConfirm = canReview, canReject = canReview, canBlock, canProof = true, reviewAction, initialId }: { initial: QItem[]; canReview: boolean; canConfirm?: boolean; canReject?: boolean; canBlock: boolean; canProof?: boolean; reviewAction: Act; initialId?: number }) {
   const [items, setItems] = useState(initial);
   const [sel, setSel] = useState<number | null>(initialId ?? null);
   const [fresh, setFresh] = useState<Set<number>>(new Set());
@@ -120,7 +120,8 @@ export default function QueueBoard({ initial, canReview, canBlock, reviewAction,
               <div className="flex items-center gap-3"><Deadline due={current.review_due_at} now={now} big /><span className="num" style={{ fontFamily: "var(--f-head)", fontWeight: 700, fontSize: 26 }}>{money(current.total, current.currency)}</span></div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <ProofPreview bookingId={current.id} kind={current.proof_kind} deleted={!!current.file_deleted_at} />
+              {canProof ? <ProofPreview bookingId={current.id} kind={current.proof_kind} deleted={!!current.file_deleted_at} />
+                : <div className="empty" style={{ padding: 24 }}><Icon name="lock" size={22} stroke="var(--stone)" /><span>لا تملك صلاحية عرض الإشعار</span></div>}
               <dl className="flex flex-col gap-2.5" style={{ margin: 0, fontSize: 14 }}>
                 <Row k="الزبون" v={current.customer_name} />
                 <Row k="واتساب" v={<span dir="ltr" className="num">{current.phone_e164}</span>} />
@@ -137,11 +138,11 @@ export default function QueueBoard({ initial, canReview, canBlock, reviewAction,
             <ActionForm action={reviewAction} onDone={onDone} key={current.id}
               className="glass flex flex-col gap-3 fixed lg:static inset-x-3 bottom-[72px] lg:bottom-auto z-40" style={{ padding: 14, borderRadius: 22, background: "rgba(255,255,255,.9)", boxShadow: "var(--sh-float)" }}>
               <input type="hidden" name="id" value={current.id} />
-              <div className="field"><label className="label" htmlFor="reason">سبب الرفض <span className="muted" style={{ fontWeight: 400 }}>(إلزامي عند الرفض)</span></label>
-                <input id="reason" name="reason" className="input" maxLength={300} placeholder="مثال: المبلغ غير مطابق" /><FieldError name="reason" /></div>
+              {canReject && <div className="field"><label className="label" htmlFor="reason">سبب الرفض <span className="muted" style={{ fontWeight: 400 }}>(إلزامي عند الرفض)</span></label>
+                <input id="reason" name="reason" className="input" maxLength={300} placeholder="مثال: المبلغ غير مطابق" /><FieldError name="reason" /></div>}
               <div className="flex flex-wrap gap-2">
-                <Submit className="btn btn-success flex-1" name="decision" value="Confirm" pendingText="…">تثبيت الحجز</Submit>
-                <ConfirmButton className="btn btn-outline" name="decision" value="Reject" title="رفض الطلب" message="سيُرفض الطلب ويُفتح الوقت للحجز من جديد. تأكد من كتابة السبب." confirmLabel="رفض">رفض</ConfirmButton>
+                {canConfirm && <Submit className="btn btn-success flex-1" name="decision" value="Confirm" pendingText="…">تثبيت الحجز</Submit>}
+                {canReject && <ConfirmButton className="btn btn-outline" name="decision" value="Reject" title="رفض الطلب" message="سيُرفض الطلب ويُفتح الوقت للحجز من جديد. تأكد من كتابة السبب." confirmLabel="رفض">رفض</ConfirmButton>}
                 {canBlock && <ConfirmButton className="btn btn-danger" name="decision" value="RejectAndBlock" danger double title="رفض وحظر" message="سيُرفض الطلب ويُحظر رقم الزبون والـ IP والجهاز من الحجز مستقبلًا." confirmLabel="رفض وحظر">رفض وحظر</ConfirmButton>}
                 <a className="btn btn-wa btn-icon" href={`https://wa.me/${current.phone_e164.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" aria-label="واتساب الزبون"><Icon name="wa" size={20} /></a>
               </div>

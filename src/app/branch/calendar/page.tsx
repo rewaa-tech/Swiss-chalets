@@ -11,7 +11,7 @@ const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Numbe
 
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const u = await requireUser("branch");
-  requirePerm(u, "calendar.manage");
+  requirePerm(u, "calendar.view");
   const sp = await searchParams;
   const today = todayLocal();
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.month ?? "") ? sp.month! : today.slice(0, 7);

@@ -9,7 +9,7 @@ import { saveResponsiveImage, deleteResponsiveImage, saveQr, deleteMediaFile } f
 import { invalidateUnit, invalidateAll } from "@/lib/services/cache";
 import { audit } from "@/lib/audit";
 import { bad, conflict, forbidden, notFound } from "@/lib/errors";
-import { GRANTABLE, type Permission } from "@/lib/permissions";
+import { createAccount, setAccountPermissions, setAccountActive } from "@/lib/services/accounts";
 import { base62Token, randomHex } from "@/lib/crypto";
 import { sendTelegram, telegramConfigured } from "@/lib/services/telegram";
 import type { Mode, SlotKind } from "@/lib/services/availability";
@@ -19,7 +19,7 @@ type S = ActionState | null;
 // ───────── Review ─────────
 export async function reviewAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "bookings.review");
+    const u = await actionUser("branch");
     const decision = str(fd, "decision") as ReviewDecision;
     if (!["Confirm", "Reject", "RejectAndBlock"].includes(decision)) throw bad("إجراء غير معروف");
     const r = await reviewBooking(u, int(fd, "id"), decision, str(fd, "reason"));
@@ -30,7 +30,7 @@ export async function reviewAction(_: S, fd: FormData) {
 
 export async function voidAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "bookings.review");
+    const u = await actionUser("branch", "bookings.void");
     await voidNoDocuments(u, int(fd, "id"));
     revalidatePath("/branch/bookings", "layout");
     return "تم تسجيل الحجز كملغى لعدم الثبوتيات";
@@ -39,7 +39,7 @@ export async function voidAction(_: S, fd: FormData) {
 
 export async function manualAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "bookings.review");
+    const u = await actionUser("branch", "bookings.manual");
     const r = await createManual(u, {
       unitId: int(fd, "unitId"), slotId: int(fd, "slotId"), date: str(fd, "date"), nights: int(fd, "nights") || 1,
       name: str(fd, "name"), phone: str(fd, "phone"), category: str(fd, "category"), persons: int(fd, "persons"), notes: str(fd, "notes"),
@@ -53,7 +53,7 @@ export async function manualAction(_: S, fd: FormData) {
 // ───────── Calendar ─────────
 export async function daysAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "calendar.manage");
+    const u = await actionUser("branch", "calendar.open_close");
     const units = String(fd.get("units") ?? "").split(",").map(Number).filter(Boolean);
     const days = String(fd.get("days") ?? "").split(",").filter(Boolean);
     const open = str(fd, "open") === "1";
@@ -68,8 +68,8 @@ const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9؀-ۿ]+/g
 
 export async function unitAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "units.manage");
     const id = int(fd, "id");
+    const u = await actionUser("branch", id ? "units.edit" : "units.create");
     const name = str(fd, "name");
     if (name.length < 2 || name.length > 80) throw bad("اسم الوحدة مطلوب (2–80 حرفًا)", "name");
     const slug = slugify(str(fd, "slug") || name);
@@ -113,7 +113,7 @@ export async function unitAction(_: S, fd: FormData) {
 
 export async function unitActiveAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "units.manage");
+    const u = await actionUser("branch", "units.toggle");
     const id = int(fd, "id"), active = str(fd, "active") === "1";
     await unitInBranch(u, id);
     if (!active) {
@@ -130,7 +130,7 @@ export async function unitActiveAction(_: S, fd: FormData) {
 
 export async function mediaUploadAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "units.manage");
+    const u = await actionUser("branch", "units.media");
     const id = int(fd, "unitId");
     await unitInBranch(u, id);
     const files = fd.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
@@ -151,7 +151,7 @@ export async function mediaUploadAction(_: S, fd: FormData) {
 
 export async function mediaAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "units.manage");
+    const u = await actionUser("branch", "units.media");
     const mediaId = int(fd, "mediaId"), op = str(fd, "op");
     const m = await one("SELECT m.* FROM unit_media m JOIN units un ON un.id = m.unit_id WHERE m.id = $1 AND un.branch_id = $2", [mediaId, u.branchId]);
     if (!m) throw notFound("الصورة غير موجودة");
@@ -178,7 +178,7 @@ export async function mediaAction(_: S, fd: FormData) {
 // ───────── Seasons & modes ─────────
 export async function seasonsAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "pricing.manage");
+    const u = await actionUser("branch", "seasons.manage");
     const seasons: SeasonInput[] = [];
     for (const kind of ["Summer", "Autumn", "Winter", "Spring"] as const) {
       const start = str(fd, `${kind}_start`), end = str(fd, `${kind}_end`);
@@ -194,7 +194,7 @@ export async function seasonsAction(_: S, fd: FormData) {
 
 export async function modeAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "pricing.manage");
+    const u = await actionUser("branch", "seasons.manage");
     const m = str(fd, "mode");
     await setUnitMode(u, int(fd, "unitId"), int(fd, "seasonId"), m === "Pool" || m === "Hotel" ? (m as Mode) : null);
     revalidatePath("/branch/seasons");
@@ -236,53 +236,33 @@ export async function copySlotsAction(_: S, fd: FormData) {
   });
 }
 
-// ───────── Staff ─────────
+// ───────── Staff (v3 §6) ─────────
 export async function staffAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "staff.manage");
-    if (u.role !== "BranchManager") throw forbidden();
-    const id = int(fd, "id");
-    const perms = fd.getAll("perms").map(String).filter((p): p is Permission => GRANTABLE.includes(p as Permission));
-    for (const p of perms) if (!u.permissions.has(p)) throw forbidden("لا يمكنك منح صلاحية لا تملكها");
-    if (id) {
-      const s = await one("SELECT id FROM app_users WHERE id = $1 AND branch_id = $2 AND role = 'Staff'", [id, u.branchId]);
-      if (!s) throw notFound("الموظف غير موجود");
-      await tx(async (c) => {
-        await c.query("DELETE FROM user_permissions WHERE user_id = $1", [id]);
-        for (const p of perms) await c.query("INSERT INTO user_permissions (user_id, permission) VALUES ($1,$2)", [id, p]);
-        await audit({ userId: u.id, branchId: u.branchId, action: "UpdateStaffPermissions", entity: "user", entityId: id, details: { perms } }, c);
-      });
-      revalidatePath("/branch/staff");
-      return "تم حفظ الصلاحيات";
-    }
-    const username = str(fd, "username"), display = str(fd, "display_name"), pass = String(fd.get("password") ?? "");
-    if (!/^[A-Za-z0-9._-]{3,32}$/.test(username)) throw bad("اسم المستخدم: 3–32 حرفًا لاتينيًا أو أرقام", "username");
-    if (display.length < 2) throw bad("الاسم مطلوب", "display_name");
-    const pv = validatePassword(pass);
-    if (pv) throw bad(pv, "password");
-    const hash = await hashPassword(pass);
-    try {
-      await tx(async (c) => {
-        const r = await c.query("INSERT INTO app_users (username, display_name, password_hash, role, branch_id, security_stamp, must_change_password, created_by) VALUES ($1,$2,$3,'Staff',$4,$5,true,$6) RETURNING id",
-          [username, display, hash, u.branchId, randomHex(16), u.id]);
-        for (const p of perms) await c.query("INSERT INTO user_permissions (user_id, permission) VALUES ($1,$2)", [r.rows[0].id, p]);
-        await audit({ userId: u.id, branchId: u.branchId, action: "CreateStaff", entity: "user", entityId: r.rows[0].id, details: { username, perms } }, c);
-      });
-    } catch (e) { if (pgCode(e) === "23505") throw bad("اسم المستخدم مستخدم مسبقًا", "username"); throw e; }
+    const u = await actionUser("branch", "staff.create");
+    const id = await createAccount(u, {
+      role: "Staff", branchId: u.branchId!, username: str(fd, "username"), displayName: str(fd, "display_name"),
+      password: String(fd.get("password") ?? ""), perms: fd.getAll("perms").map(String),
+    });
     revalidatePath("/branch/staff");
-    return "تمت إضافة الموظف. سيُطلب منه تغيير كلمة المرور بأول دخول";
+    return { message: "تمت إضافة الموظف. سيُطلب منه تغيير كلمة المرور بأول دخول", data: { id } };
+  });
+}
+
+export async function staffPermsAction(_: S, fd: FormData) {
+  return run(async () => {
+    const u = await actionUser("branch", "staff.edit_permissions");
+    await setAccountPermissions(u, int(fd, "id"), fd.getAll("perms").map(String));
+    revalidatePath("/branch/staff");
+    return "تم حفظ الصلاحيات، وصارت نافذة فورًا";
   });
 }
 
 export async function staffActiveAction(_: S, fd: FormData) {
   return run(async () => {
-    const u = await actionUser("branch", "staff.manage");
-    const id = int(fd, "id"), active = str(fd, "active") === "1";
-    const s = await one("SELECT id FROM app_users WHERE id = $1 AND branch_id = $2 AND role = 'Staff'", [id, u.branchId]);
-    if (!s) throw notFound("الموظف غير موجود");
-    await q("UPDATE app_users SET is_active = $2 WHERE id = $1", [id, active]);
-    if (!active) await rotateStamp(id);
-    await audit({ userId: u.id, branchId: u.branchId, action: active ? "EnableUser" : "DisableUser", entity: "user", entityId: id });
+    const u = await actionUser("branch", "staff.disable");
+    const active = str(fd, "active") === "1";
+    await setAccountActive(u, int(fd, "id"), active);
     revalidatePath("/branch/staff");
     return active ? "تم تفعيل الحساب" : "تم تعطيل الحساب وإنهاء جلساته";
   });

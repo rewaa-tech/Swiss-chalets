@@ -3,8 +3,9 @@ import { requireUser } from "@/lib/auth";
 import { ALL_PERMISSIONS } from "@/lib/permissions";
 
 const HOME: Record<string, string> = {
-  "bookings.view": "/branch/queue", "calendar.manage": "/branch/calendar", "units.manage": "/branch/units", "pricing.manage": "/branch/seasons",
-  "slots.manage": "/branch/slots", "blocklist.manage": "/branch/blocklist", "branch.settings": "/branch/settings", "bookings.review": "/branch/bookings/new",
+  "bookings.view": "/branch/queue", "calendar.view": "/branch/calendar", "units.view": "/branch/units", "seasons.manage": "/branch/seasons",
+  "slots.view": "/branch/slots", "content.manage": "/branch/content", "blocklist.view": "/branch/blocklist", "branch.settings": "/branch/settings",
+  "staff.view": "/branch/staff",
 };
 
 export default async function BranchHome({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {

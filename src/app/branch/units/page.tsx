@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function UnitsPage() {
   const u = await requireUser("branch");
-  requirePerm(u, "units.manage");
+  requirePerm(u, "units.view");
   const units = await q(`SELECT un.*, (SELECT path_base FROM unit_media m WHERE m.unit_id = un.id ORDER BY is_cover DESC, sort_order LIMIT 1) AS cover,
     (SELECT count(*)::int FROM unit_media m WHERE m.unit_id = un.id) AS photos FROM units un WHERE un.branch_id = $1 ORDER BY un.sort_order, un.id`, [u.branchId]);
   return (

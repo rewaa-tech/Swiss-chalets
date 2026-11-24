@@ -12,7 +12,7 @@ const KIND: Record<string, string> = { Phone: "رقم هاتف", Ip: "عنوان
 
 export default async function BlocklistPage() {
   const u = await requireUser("branch");
-  requirePerm(u, "blocklist.manage");
+  requirePerm(u, "blocklist.view");
   const rows = await q(`SELECT bi.*, a.display_name FROM blocked_identities bi LEFT JOIN app_users a ON a.id = bi.blocked_by WHERE bi.branch_id = $1 AND bi.is_active ORDER BY bi.created_at DESC`, [u.branchId]);
   return (
     <>

@@ -11,7 +11,7 @@ const KINDS = [["Summer", "الصيف"], ["Autumn", "الخريف"], ["Winter", 
 
 export default async function SeasonsPage() {
   const u = await requireUser("branch");
-  requirePerm(u, "pricing.manage");
+  requirePerm(u, "seasons.manage");
   const [seasons, units, modes] = await Promise.all([
     q("SELECT * FROM seasons WHERE branch_id = $1", [u.branchId]),
     branchUnits(u.branchId!),
