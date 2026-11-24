@@ -755,3 +755,8 @@ li.is-on .perm-name { color: var(--forest-deep); }
 .txe-hist { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: var(--line-soft); font-size: 13px; }
 .txe-hrow { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 10px; background: #fff; }
 .txe-hrow .btn-xs { align-self: flex-start; }
+
+/* ───────────── v3 §8: WebGL steamed glass ───────────── */
+.steam-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.2s var(--ease); }
+.steam-canvas.is-on { opacity: 1; }
+.season-fx.has-gl:has(.steam-canvas.is-on) > :not(.steam-canvas) { opacity: 0; transition: opacity .8s; }

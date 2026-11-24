@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import SteamGlass from "./SteamGlass";
 import type { Theme } from "@/lib/services/theme";
 
 /** Deterministic PRNG so server and client render identical drops. */
@@ -15,7 +16,9 @@ function liteMode(): boolean {
 /** _SeasonFx — overlay for hero images only. ≤100 DOM nodes. */
 export default function SeasonFx({ theme }: { theme: Theme }) {
   const [lite, setLite] = useState(true);
+  const [gl, setGl] = useState<"try" | "off">("try");
   useEffect(() => { setLite(liteMode()); }, []);
+  const fail = useCallback(() => setGl("off"), []);
   if (theme === "neutral") return null;
 
   if (theme === "winter") {
@@ -27,7 +30,8 @@ export default function SeasonFx({ theme }: { theme: Theme }) {
     });
     const trails = lite ? [] : Array.from({ length: 5 }, () => ({ x: 4 + r() * 92, y: r() * 50, h: 40 + r() * 80, d: r() * 4 }));
     return (
-      <div className={`season-fx ${lite ? "is-static" : ""}`} aria-hidden="true" data-fx-layer="winter">
+      <div className={`season-fx ${lite ? "is-static" : ""} ${!lite && gl === "try" ? "has-gl" : ""}`} aria-hidden="true" data-fx-layer="winter">
+        {!lite && gl === "try" && <SteamGlass onFail={fail} />}
         <div className="sfx-glow" />
         <div className="sfx-fog" />
         {drops.map((d, i) => (
