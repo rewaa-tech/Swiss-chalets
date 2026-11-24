@@ -12,14 +12,25 @@ import { branchTheme, siteMeta } from "@/lib/services/public";
 import { getSettings, fillTemplate } from "@/lib/settings";
 import { formStamp } from "@/lib/crypto";
 import { addDays, todayLocal, fmtDayAr } from "@/lib/time";
+import { routeParam } from "@/lib/paths";
+import { currentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 const SEASON_AR = { Summer: "الصيف", Winter: "الشتاء", Spring: "الربيع", Autumn: "الخريف" } as const;
 
-async function load(slug: string) {
-  return one(
+/** Public visitors see active units of active branches; staff of the unit's branch (or the super admin) get a preview of anything. */
+async function load(rawSlug: string) {
+  const slug = routeParam(rawSlug);
+  if (!slug) return null;
+  const u = await one(
     `SELECT u.*, b.name AS branch_name, b.slug AS branch_slug, b.status AS branch_status, b.review_start, b.review_end
-       FROM units u JOIN branches b ON b.id = u.branch_id WHERE u.slug = $1 AND u.is_active AND b.status = 'Active'`, [slug]);
+       FROM units u JOIN branches b ON b.id = u.branch_id WHERE u.slug = $1`, [slug]);
+  if (!u) return null;
+  const published = u.is_active && u.branch_status === "Active";
+  if (published) return { ...u, preview: false };
+  const viewer = await currentUser();
+  const canPreview = !!viewer && (viewer.role === "SuperAdmin" || viewer.branchId === u.branch_id);
+  return canPreview ? { ...u, preview: true } : null;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -42,6 +53,11 @@ export default async function UnitPage({ params }: { params: Promise<{ slug: str
 
   return (
     <PublicShell theme={theme} page="Unit" entityId={u.id} branchId={u.branch_id} waText={`مرحبًا، أستفسر عن ${u.name} - فرع ${u.branch_name}`} active="units" header={false}>
+      {u.preview && (
+        <div role="status" className="text-center" style={{ position: "sticky", top: 0, zIndex: 50, background: "var(--warning)", color: "#fff", padding: "10px 16px", fontWeight: 600 }}>
+          معاينة: هذه الوحدة غير منشورة للزبائن{!u.is_active ? " (معطّلة)" : " (الفرع غير نشط)"}
+        </div>
+      )}
       <section className="hero" style={{ minHeight: 460 }}>
         <HeroImage base={cover} alt={u.name} priority />
         <SeasonFx theme={theme} />

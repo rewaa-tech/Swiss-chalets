@@ -9,17 +9,18 @@ import UnitCard from "@/components/UnitCard";
 import { q } from "@/lib/db";
 import { branchBySlug, branchTheme, siteMeta, UNIT_CARD_SQL } from "@/lib/services/public";
 import { THEME_BADGE } from "@/lib/services/theme";
+import { routeParam } from "@/lib/paths";
 
 export const dynamic = "force-dynamic";
 const SEASON_AR = { Summer: "الصيف", Winter: "الشتاء", Spring: "الربيع", Autumn: "الخريف" } as const;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const b = await branchBySlug((await params).slug);
+  const b = await branchBySlug(routeParam((await params).slug));
   return b ? { title: `فرع ${b.name}`, description: b.description || `أكواخ ومزارع بمسابح خاصة في ${b.name}.` } : {};
 }
 
 export default async function BranchPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ type?: string; family?: string }> }) {
-  const b = await branchBySlug((await params).slug);
+  const b = await branchBySlug(routeParam((await params).slug));
   if (!b) notFound();
   const sp = await searchParams;
   const [{ theme, season }, meta] = await Promise.all([branchTheme(b.id), siteMeta()]);
